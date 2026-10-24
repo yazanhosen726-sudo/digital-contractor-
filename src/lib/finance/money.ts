@@ -21,7 +21,7 @@ export function toCents(value: number | string | null | undefined): bigint {
   const negative = str.startsWith("-");
   const [intPart, fracRaw = ""] = str.replace("-", "").split(".");
   const frac = (fracRaw + "000").slice(0, 3); // keep one extra digit for rounding
-  let cents = BigInt(intPart) * SCALE + BigInt(frac.slice(0, 2));
+  let cents = BigInt(intPart ?? "0") * SCALE + BigInt(frac.slice(0, 2));
   if (Number(frac[2]) >= 5) cents += 1n;
   return negative ? -cents : cents;
 }
