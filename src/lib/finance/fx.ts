@@ -33,8 +33,8 @@ export function convert(
         (r.from_currency === target && r.to_currency === m.currency),
     )
     .sort((a, b) => (a.rate_date < b.rate_date ? 1 : a.rate_date > b.rate_date ? -1 : 0));
-  const direct = eligible.find((r) => r.from_currency === m.currency);
-  const best = direct ?? eligible[0];
+  const newest = eligible[0];
+  const best = eligible.find((r) => r.rate_date === newest?.rate_date && r.from_currency === m.currency) ?? newest;
   if (!best) {
     return {
       converted: null,
