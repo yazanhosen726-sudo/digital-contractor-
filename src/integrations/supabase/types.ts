@@ -1478,6 +1478,20 @@ export type Database = {
       }
       is_org_admin: { Args: { _org: string }; Returns: boolean }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      record_labor: {
+        Args: {
+          _currency: string
+          _date: string
+          _org: string
+          _planned?: boolean
+          _project: string
+          _quantity: number
+          _rate: number
+          _unit: string
+          _worker: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       ai_action_status:

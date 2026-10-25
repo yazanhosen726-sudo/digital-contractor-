@@ -8,6 +8,13 @@
       "when": 1792817857020,
       "tag": "0000_core_contractor_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792899784157,
+      "tag": "0001_contractor_integrity_and_labor",
+      "breakpoints": true
     }
   ]
 }
