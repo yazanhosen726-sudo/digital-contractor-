@@ -10,7 +10,7 @@ describe('Contractor finance rules',()=>{
  it('uses the most recent eligible direct or inverse rate',()=>{expect(convert(money('10','EUR'),'USD','2026-10-01',[{from_currency:'EUR',to_currency:'USD',rate:'1.1',rate_date:'2026-09-01'},{from_currency:'USD',to_currency:'EUR',rate:'0.5',rate_date:'2026-10-01'}]).converted?.cents).toBe(2000n)});
  it('does not count an invoice again as a purchase commitment',()=>{const r=financialReport(baseline).projects[0];expect(r?.actualCost).toBe('30.00');expect(r?.commitments).toBe('20.00');expect(r?.availableAfterCommitments).toBe('70.00')});
  it('counts only approved budget changes',()=>expect(financialReport(baseline).projects[0]?.approvedBudget).toBe('120.00'));
- it('derives payables and cash separately',()=>{const r=financialReport(baseline);expect(r.payables.USD).toBe('20.00');expect(r.cashOut.USD).toBe('10.00');expect(r.receivables.USD).toBe('80.00')});
+ it('derives payables and cash separately',()=>{const r=financialReport(baseline);expect(r.payables['USD']).toBe('20.00');expect(r.cashOut['USD']).toBe('10.00');expect(r.receivables['USD']).toBe('80.00')});
  it('excludes drafts and pending approvals from actual costs',()=>expect(financialReport({...baseline,expenses:[{...cost,approval_status:'pending'},{...cost,id:'draft',status:'draft'}]}).actualCosts).toEqual({}));
  it('keeps currencies separate and marks incomplete budgets',()=>{const r=financialReport({...baseline,expenses:[cost,{...cost,id:'eur',currency:'EUR',total_amount:'8.00'}]});expect(r.actualCosts).toEqual({USD:'30.00',EUR:'8.00'});expect(r.projects[0]?.remainingBudget).toBeNull()});
 });
