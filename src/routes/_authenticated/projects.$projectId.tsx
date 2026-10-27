@@ -53,7 +53,7 @@ function ProjectPage() {
 
   async function setStatus(status: (typeof STATUSES)[number]) {
     const { error } = await supabase.from("projects").update({ status }).eq("id", projectId);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Status updated");
     qc.invalidateQueries({ queryKey: ["project", projectId] });
     qc.invalidateQueries({ queryKey: ["projects"] });

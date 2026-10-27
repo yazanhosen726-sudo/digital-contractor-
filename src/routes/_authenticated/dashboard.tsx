@@ -49,7 +49,7 @@ function CreateOrg() {
     setBusy(true);
     const { error } = await supabase.rpc("create_organization", { _name: name, _currency: "USD" });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Business created");
     qc.invalidateQueries({ queryKey: ["membership"] });
   }
@@ -100,12 +100,13 @@ function NewProject({ orgId, onDone }: { orgId: string; onDone: () => void }) {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     const parsed = projectInput.safeParse({ orgId, name: f["name"], code: f["code"], location: f["location"] ?? "", currency: "USD", original_budget: f["original_budget"], contract_value: f["contract_value"], status: "planning" });
-    if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Check the form");
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Check the form"); return; }
     const { orgId: org_id, ...rest } = parsed.data;
     setBusy(true);
-    const { error } = await supabase.from("projects").insert({ org_id, ...rest, location: rest.location || null });
+    const { error } = await supabase.from("projects").insert({ org_id, ...rest, location: rest.location || null, // exact decimal strings; the database stores numeric without float rounding
+      original_budget: rest.original_budget as unknown as number, contract_value: rest.contract_value as unknown as number });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Project added");
     qc.invalidateQueries({ queryKey: ["projects", orgId] });
     onDone();
