@@ -24,7 +24,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
 
-  async function submit(e: FormEvent<HTMLFormElement>) {
+  async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const email = String(f.get("email"));
@@ -33,7 +33,7 @@ function AuthPage() {
     if (mode === "in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       navigate({ to: "/dashboard" });
     } else {
       const { error } = await supabase.auth.signUp({
@@ -42,7 +42,7 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin + "/dashboard", data: { display_name: String(f.get("name")) } },
       });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       setSent(true);
     }
   }
