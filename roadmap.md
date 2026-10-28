@@ -1,4 +1,11 @@
 # Contractor foundation
+- [ ] Design workflow milestone 1: private project drawing ingestion, deterministic PDF inspection, visible processing failures and isolation tests.
+- [ ] Design workflow milestone 2: extraction, explicit units, source references and measurement review.
+- [ ] Design workflow milestone 3: reviewed quantities and revision-aware BOQ.
+- [ ] Design workflow milestone 4: deterministic estimates using configured prices.
+- [ ] Design workflow milestone 5: reviewed procurement and draft RFQs.
+- [ ] Design workflow milestone 6: distinct commercial draft documents.
+- [ ] Design workflow milestone 7: full workflow and authorization validation.
 - [x] Sign-in, sign-out, business setup and project pages.
 - [x] Financial reporting services and calculation tests.
 - [ ] Project, supplier, expense, invoice, payment and labor entry.
