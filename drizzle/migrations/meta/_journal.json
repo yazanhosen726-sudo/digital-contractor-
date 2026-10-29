@@ -15,6 +15,13 @@
       "when": 1792899784157,
       "tag": "0001_contractor_integrity_and_labor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793250612964,
+      "tag": "0002_fix_org_reference_optional_user_field",
+      "breakpoints": true
     }
   ]
 }

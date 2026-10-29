@@ -13,6 +13,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "Sign in to manage your construction business records." },
       { property: "og:title", content: "Sign in — Digital Contractor" },
       { property: "og:description", content: "Secure access to your contractor projects and finances." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,

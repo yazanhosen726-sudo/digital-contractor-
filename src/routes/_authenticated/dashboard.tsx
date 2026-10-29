@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "description", content: "Your construction projects and budgets." },
       { property: "og:title", content: "Projects — Digital Contractor" },
       { property: "og:description", content: "Your construction projects and budgets." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Dashboard,
