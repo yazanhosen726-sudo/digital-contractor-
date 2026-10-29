@@ -8,6 +8,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Projects, budgets, suppliers, costs and payments for contractors in one secure place." },
       { property: "og:title", content: "Digital Contractor" },
       { property: "og:description", content: "Projects, budgets, suppliers, costs and payments for contractors in one secure place." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,

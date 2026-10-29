@@ -6,6 +6,7 @@ import { membershipQuery, WRITE_ROLES } from "@/lib/org";
 import { financialReport } from "@/lib/finance/report";
 import { AppHeader } from "@/components/AppHeader";
 import { Badge } from "@/components/ui/badge";
+import { ProjectDrawings } from "@/components/ProjectDrawings";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/_authenticated/projects/$projectId")({
       { name: "description", content: "Project budget, costs and commitments." },
       { property: "og:title", content: "Project — Digital Contractor" },
       { property: "og:description", content: "Project budget, costs and commitments." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ProjectPage,
@@ -96,6 +99,7 @@ function ProjectPage() {
           <ul className="mt-4 list-disc pl-5 text-sm text-destructive">{report.issues.map((i) => <li key={i}>{i}</li>)}</ul>
         )}
         <p className="mt-6 text-sm text-muted-foreground">{data.expenses.length} costs · {data.purchase_orders.length} purchase orders · {data.receivables.length} client invoices recorded.</p>
+        <ProjectDrawings projectId={project.id} orgId={project.org_id} canWrite={canWrite} />
       </main>
     </>
   );
