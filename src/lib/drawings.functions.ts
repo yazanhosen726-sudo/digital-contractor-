@@ -27,7 +27,7 @@ export const uploadDrawing = createServerFn({ method: "POST" })
     const id = crypto.randomUUID();
     const path = `${project.org_id}/${project.id}/${id}.pdf`;
     const { error: insertError } = await supabase.from("documents").insert({ id, org_id: project.org_id, project_id: project.id, storage_path: path, file_name: file.name.replace(/[\x00-\x1f]/g, "").slice(0, 200), kind: "drawing", mime_type: "application/pdf", size_bytes: bytes.byteLength, uploaded_by: userId, status: "uploaded", extracted_data: { checksum, pipeline: "pdf-inspection-v1", attempts: [] } });
-    if (insertError) throw new Error("Could not record the drawing.");
+    if (insertError) { console.error("Drawing record insert failed", insertError.code, insertError.message); throw new Error("Could not record the drawing."); }
     const { error: uploadError } = await supabase.storage.from("documents").upload(path, bytes, { contentType: "application/pdf", upsert: false });
     if (uploadError) {
       await supabase.from("documents").update({ status: "failed", extraction_issues: ["Upload failed. Select the file and upload again."] }).eq("id", id);
