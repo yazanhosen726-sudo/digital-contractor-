@@ -20,5 +20,6 @@ describe("PDF drawing rules", () => {
   it("rejects a sibling project path", () => expect(() => assertDrawingAccess({ org_id: "a", project_id: "p", storage_path: "a/other/file.pdf", kind: "drawing" }, { id: "p", org_id: "a" })).toThrow("not accessible"));
   it("inspects real PDF bytes for text and vectors but never verifies dimensions", async () => { const result = await inspectPdf(pdfFixture()); expect(result.pageCount).toBe(1); expect(result.pages[0]?.textItems.map(i => i.text).join(" ")).toContain("5000 mm"); expect(result.pages[0]?.vectorOperators).toBeGreaterThan(0); expect(result.measurementStatus).toBe("unverified"); });
   it("rejects more than 50 pages", async () => expect(inspectPdf(pdfFixture("", 51))).rejects.toThrow("50 pages"));
+  it("identifies image-only PDF content without inventing text", async () => { const result = await inspectPdf(pdfFixture("q 100 0 0 100 50 50 cm BI /W 1 /H 1 /CS /RGB /BPC 8 /F /ASCIIHexDecode ID ff0000> EI Q")); expect(result.pages[0]?.imageOperators).toBeGreaterThan(0); expect(result.pages[0]?.textItems).toEqual([]); expect(result.measurementStatus).toBe("unverified"); });
   it("fails corrupt PDF content", async () => expect(inspectPdf(new TextEncoder().encode("%PDF-corrupt"))).rejects.toThrow());
 });
