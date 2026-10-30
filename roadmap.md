@@ -1,5 +1,6 @@
 # Contractor foundation
-- [ ] Current milestone: PDF-only secure project uploads, deterministic content inspection, clear statuses/retry, organization-isolation tests and measurement/DXF/DWG feasibility assessment; implementation in validation.
+- [x] Current milestone: PDF-only secure uploads, deterministic inspection, saved evidence/download, failures/retry and feasibility assessment; 25 tests passed and signed-in upload flow verified.
+- [ ] Additional validation: two independent organization accounts, representative contractor drawings, and published Worker runtime; blocked on appropriate accounts/drawings and publication authorization.
 - [ ] Deferred next milestone: quantity takeoff after actual drawing evidence and reviewed measurements.
 - [ ] Design workflow milestone 3: reviewed quantities and revision-aware BOQ.
 - [ ] Design workflow milestone 4: deterministic estimates using configured prices.
