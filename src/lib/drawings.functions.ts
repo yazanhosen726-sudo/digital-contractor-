@@ -1,8 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assertDrawingAccess, validatePdf } from "./drawings";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
+import { assertDrawingAccess, validatePdf, type PdfInspection } from "./drawings";
+import { extractMeasurements, MEASUREMENT_VERSION } from "./measurements";
+
+const drawingInput = z.object({ documentId: z.string().uuid(), projectId: z.string().uuid() });
+
+function metadataOf(value: Json | null): Record<string, Json | undefined> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+async function loadWritableDrawing(supabase: SupabaseClient<Database>, data: z.infer<typeof drawingInput>) {
+  const [{ data: document }, { data: project }] = await Promise.all([
+    supabase.from("documents").select("*").eq("id", data.documentId).single(),
+    supabase.from("projects").select("id,org_id").eq("id", data.projectId).single(),
+  ]);
+  if (!document || !project) throw new Error("Drawing is not accessible.");
+  assertDrawingAccess(document, project);
+  const { data: writer, error: roleError } = await supabase.rpc("can_write_org", { _org: project.org_id });
+  if (roleError || !writer) throw new Error("You do not have permission to change drawings.");
+  return { document, previous: metadataOf(document.extracted_data) };
+}
 
 export const uploadDrawing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -38,18 +58,10 @@ export const uploadDrawing = createServerFn({ method: "POST" })
 
 export const inspectDrawing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ documentId: z.string().uuid(), projectId: z.string().uuid() }))
+  .inputValidator(drawingInput)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const [{ data: document }, { data: project }] = await Promise.all([
-      supabase.from("documents").select("*").eq("id", data.documentId).single(),
-      supabase.from("projects").select("id,org_id").eq("id", data.projectId).single(),
-    ]);
-    if (!document || !project) throw new Error("Drawing is not accessible.");
-    assertDrawingAccess(document, project);
-    const { data: writer, error: roleError } = await supabase.rpc("can_write_org", { _org: project.org_id });
-    if (roleError || !writer) throw new Error("You do not have permission to inspect drawings.");
-    const previous = document.extracted_data && typeof document.extracted_data === "object" && !Array.isArray(document.extracted_data) ? document.extracted_data : {};
+    const { document, previous } = await loadWritableDrawing(supabase, data);
     if (previous["inspection"] && document.status === "needs_review") return { id: document.id, status: "needs_review" };
     if (document.status === "extracting" && Date.now() - Date.parse(document.updated_at) < 120_000) throw new Error("Inspection is already running. Try again in two minutes if it remains interrupted.");
     const now = new Date().toISOString();
@@ -66,7 +78,8 @@ export const inspectDrawing = createServerFn({ method: "POST" })
       if (checksum !== previous["checksum"]) throw new Error("Source checksum changed. Upload a new revision instead.");
       const { inspectPdf } = await import("./pdf-inspection.server");
       const inspection = await inspectPdf(bytes);
-      const { error } = await supabase.from("documents").update({ status: "needs_review", extraction_model: "unpdf-1.4.0", extracted_data: { ...previous, inspection: inspection as unknown as Json, attempts: [...attempts, { startedAt: now, finishedAt: new Date().toISOString(), status: "needs_review" }] }, extraction_issues: inspection.warnings }).eq("id", document.id);
+      const measurements = extractMeasurements(inspection, checksum);
+      const { error } = await supabase.from("documents").update({ status: "needs_review", extraction_model: "unpdf-1.4.0", extracted_data: { ...previous, inspection: inspection as unknown as Json, measurements: measurements as unknown as Json, attempts: [...attempts, { startedAt: now, finishedAt: new Date().toISOString(), status: "needs_review" }] }, extraction_issues: inspection.warnings }).eq("id", document.id);
       if (error) throw new Error("Could not save inspection. Retry inspection.");
       return { id: document.id, status: "needs_review" };
     } catch (error) {
@@ -75,4 +88,21 @@ export const inspectDrawing = createServerFn({ method: "POST" })
       if (saveError) throw new Error("Inspection failed and its status could not be saved. Refresh and retry after two minutes.");
       return { id: document.id, status: "failed" };
     }
+  });
+
+export const extractDrawingMeasurements = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(drawingInput)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { document, previous } = await loadWritableDrawing(supabase, data);
+    const inspection = previous["inspection"];
+    const checksum = previous["checksum"];
+    if (!inspection || typeof inspection !== "object" || typeof checksum !== "string") throw new Error("Inspect this drawing before extracting measurements.");
+    const existing = previous["measurements"];
+    if (existing && typeof existing === "object" && !Array.isArray(existing) && existing["version"] === MEASUREMENT_VERSION) return { id: document.id, status: existing["status"] };
+    const measurements = extractMeasurements(inspection as unknown as PdfInspection, checksum);
+    const { error } = await supabase.from("documents").update({ extracted_data: { ...previous, measurements: measurements as unknown as Json } }).eq("id", document.id);
+    if (error) throw new Error("Could not save measurements. Try again.");
+    return { id: document.id, status: measurements.status };
   });
