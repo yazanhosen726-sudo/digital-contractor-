@@ -8,6 +8,13 @@ Text, image and operator counts are evidence indicators, not a complete geometry
 ## Next measurement evaluation
 Use representative contractor drawings with known, independently reviewed reference dimensions. Evaluate vector-text, mixed and scanned sheets separately. Retain original sheet and detail references, raw annotation evidence, explicit unit and scale labels, human calibration and revision history. Resolve different scales on the same page before interpreting geometry. Compare extracted candidates against reviewed ground truth with documented tolerances; unresolved or contradictory cases remain unverified. The synthetic PDF tests validate parsing and indicators only, not construction measurement accuracy. Actual drawing accuracy has not yet been demonstrated.
 
+## Validation completed — 2026-10-30
+- 25 tests passed: 10 PDF/access-validation tests, 7 live private-storage/document-access tests, and 8 existing financial regression tests.
+- Signed-in project flow verified in the browser using synthetic PDFs: upload, automatic inspection, saved evidence after reload, byte-identical original download, corrupt-file failure, and explicit retry. No browser page errors occurred in the completed run.
+- Live access checks confirmed member reads/downloads, anonymous read/download/upload/write denial, and rejection of document insertion into an unrelated organization. Helper tests reject mismatched organization and project paths. Direct browser downloads use the authenticated storage client and storage access policies; they do not require a separate server-function wrapper.
+- Two independent organization sessions have not been tested against each other's existing records. Real contractor drawing accuracy and published Worker runtime remain unverified.
+- An initial development dependency refresh interrupted requests, leaving uploaded records recoverable through Inspect; the final uninterrupted upload flow passed. Test drawing records remain in the existing project as explicitly named validation files.
+
 ## DXF
 Do not accept DXF as analyzed yet. A pure JavaScript ASCII DXF parser is a feasible next evaluation, but must preserve header units, layers, entities, block/insert transforms, text, dimension objects and unsupported entities. Require explicit units and representative-file coverage tests. Confirm the selected parser license and version before adoption. Raw coordinates alone do not establish quantities.
 
