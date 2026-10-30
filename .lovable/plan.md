@@ -1,16 +1,16 @@
-# Finish PDF upload and inspection validation
+# First-stage PDF measurement candidates
 
 ## Verified foundation
 Existing organization membership, project records, private document storage, audit triggers and decimal-safe financial services will be reused. AI packages and a gateway key are present; the default model is available, but no working AI drawing integration exists in application code.
 
 ## Execution plan
-1. Run the existing PDF tests; fix only demonstrated failures.
-2. Sign into the existing business and exercise upload, saved inspection evidence, original download, failure and retry through the project page.
-3. Run private-storage and organization-access tests against the uploaded record, including an unrelated organization where available. Keep reusable tests in the project.
-4. Confirm current page metadata and app errors, then update the milestone checklist and technical assessment with verified results and limitations.
+1. Parse explicit written metric/imperial measurements and labeled unitless dimensions from existing PDF text evidence. Retain the exact text, value, unit, page, contributing text elements and page-space bounds. Join only nearby same-line text fragments; never infer lengths from geometry or scale.
+2. Record possible scale/unit annotations and image/vector indicators per page. All scale evidence remains unverified; scanned/image-based pages need manual review because OCR is not included.
+3. Save versioned candidate results in the existing document JSON, separate from verified records, with checksum, extraction method, confidence and completed/partial/verification/failed outcomes. Reuse successful results and upgrade previously inspected files through an explicit extraction button.
+4. Show candidate results in the existing drawing list without redesign. Test concrete parsing and safety rules, then exercise stored-file extraction, persistence and failure in the signed-in project.
 
 ## Scope
-PDF only, existing private storage and document records, existing interface. No redesign, new database tables, AI extraction, quantity takeoff, pricing or procurement. Test PDFs demonstrate parsing, not reliable construction measurements. Actual-drawing accuracy and published-runtime checks remain explicitly unverified until suitable drawings and publication are available.
+PDF only, existing private storage and document records, existing interface. Deterministic text parsing only; no new tables, integrations, AI calls, OCR, geometric measurement, BOQ, costs or commercial documents. Confidence describes annotation parsing, not engineering accuracy. A completed parse is not verified measurement. Representative contractor drawings with independently checked dimensions are required for real-world accuracy claims.
 
 ## Subsequent milestones
 - Drawing extraction and human measurement verification; maintain separate revisions and affected-output revalidation.
