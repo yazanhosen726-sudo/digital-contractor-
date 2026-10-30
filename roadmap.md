@@ -1,4 +1,5 @@
 # Contractor foundation
+- [ ] Current authorized milestone: traceable written PDF measurement candidates, unit/scale evidence, page classification, separate unverified results and processing statuses; no BOQ or costs.
 - [x] Current milestone: PDF-only secure uploads, deterministic inspection, saved evidence/download, failures/retry and feasibility assessment; 25 tests passed and signed-in upload flow verified.
 - [ ] Additional validation: two independent organization accounts, representative contractor drawings, and published Worker runtime; blocked on appropriate accounts/drawings and publication authorization.
 - [ ] Deferred next milestone: quantity takeoff after actual drawing evidence and reviewed measurements.
