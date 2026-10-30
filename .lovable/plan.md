@@ -1,15 +1,16 @@
-# Design-to-procurement implementation
+# Finish PDF upload and inspection validation
 
 ## Verified foundation
 Existing organization membership, project records, private document storage, audit triggers and decimal-safe financial services will be reused. AI packages and a gateway key are present; the default model is available, but no working AI drawing integration exists in application code.
 
-## First working milestone
-1. Add project drawing uploads without changing the existing interface or business records.
-2. Store PDF, PNG, JPEG and WebP files privately, tied to authenticated organizations and projects. Validate signatures, size and format on the server.
-3. Inspect PDFs deterministically on the backend: page count, extractable text with page coordinates, image/vector indicators, explicit unit and scale annotations. Preserve raw evidence; never interpret PDF coordinates as construction dimensions.
-4. Record immutable source files, checksums, processing attempts, status, error details and unverified results. Repeated successful processing returns the saved result; failures can be retried explicitly.
-5. Show source evidence and unresolved scale, units and raster limitations on the project page. Images are accepted as sources but remain unverified pending a later vision workflow.
-6. Test file validation, PDF extraction, authentication, storage access, project links, retries and organization isolation.
+## Execution plan
+1. Run the existing PDF tests; fix only demonstrated failures.
+2. Sign into the existing business and exercise upload, saved inspection evidence, original download, failure and retry through the project page.
+3. Run private-storage and organization-access tests against the uploaded record, including an unrelated organization where available. Keep reusable tests in the project.
+4. Confirm current page metadata and app errors, then update the milestone checklist and technical assessment with verified results and limitations.
+
+## Scope
+PDF only, existing private storage and document records, existing interface. No redesign, new database tables, AI extraction, quantity takeoff, pricing or procurement. Test PDFs demonstrate parsing, not reliable construction measurements. Actual-drawing accuracy and published-runtime checks remain explicitly unverified until suitable drawings and publication are available.
 
 ## Subsequent milestones
 - Drawing extraction and human measurement verification; maintain separate revisions and affected-output revalidation.
