@@ -1,13 +1,14 @@
 import type { PdfInspection, TextEvidence } from "./drawings";
 
 export const MEASUREMENT_VERSION = 1;
+export const REVIEW_UNITS = ["mm", "cm", "m", "ft", "in"] as const;
 export type MeasurementStatus = "completed" | "partially_completed" | "requires_verification" | "failed";
 export const measurementStatusLabels: Record<MeasurementStatus, string> = {
   completed: "Completed", partially_completed: "Partially completed", requires_verification: "Requires verification", failed: "Failed",
 };
 type Source = { page: number; text: string; textItemIndexes: number[]; location: { x: number; y: number; width: number; height: number; coordinateSystem: "PDF page space" } };
 export type MeasurementCandidate = Source & {
-  id: string; value: number; unit: "mm" | "cm" | "m" | "ft" | "in" | null;
+  id: string; value: number; unit: (typeof REVIEW_UNITS)[number] | null;
   method: "explicit_text_annotation" | "labeled_unitless_annotation";
   confidence: "medium" | "low"; confidenceBasis: string;
   verification: "required"; verificationReasons: string[];

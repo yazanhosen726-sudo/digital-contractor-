@@ -12,7 +12,7 @@ function metadataOf(value: Json | null): Record<string, Json | undefined> {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
-async function loadWritableDrawing(supabase: SupabaseClient<Database>, data: z.infer<typeof drawingInput>) {
+export async function loadWritableDrawing(supabase: SupabaseClient<Database>, data: z.infer<typeof drawingInput>) {
   const [{ data: document }, { data: project }] = await Promise.all([
     supabase.from("documents").select("*").eq("id", data.documentId).single(),
     supabase.from("projects").select("id,org_id").eq("id", data.projectId).single(),

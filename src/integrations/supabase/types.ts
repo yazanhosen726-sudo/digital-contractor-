@@ -799,6 +799,63 @@ export type Database = {
           },
         ]
       }
+      measurement_review_events: {
+        Row: {
+          action: string
+          actor_id: string
+          candidate_id: string
+          corrected_unit: string | null
+          corrected_value: number | null
+          created_at: string
+          document_id: string
+          id: string
+          note: string | null
+          org_id: string
+          source_checksum: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string
+          candidate_id: string
+          corrected_unit?: string | null
+          corrected_value?: number | null
+          created_at?: string
+          document_id: string
+          id?: string
+          note?: string | null
+          org_id: string
+          source_checksum: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          candidate_id?: string
+          corrected_unit?: string | null
+          corrected_value?: number | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          note?: string | null
+          org_id?: string
+          source_checksum?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurement_review_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurement_review_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestones: {
         Row: {
           completed_at: string | null
