@@ -856,6 +856,124 @@ export type Database = {
           },
         ]
       }
+      takeoff_item_sources: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          document_id: string
+          id: string
+          item_id: string
+          occurrence: number
+          org_id: string
+          source_checksum: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          document_id: string
+          id?: string
+          item_id: string
+          occurrence?: number
+          org_id: string
+          source_checksum: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          item_id?: string
+          occurrence?: number
+          org_id?: string
+          source_checksum?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "takeoff_item_sources_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takeoff_item_sources_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takeoff_item_sources_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_items: {
+        Row: {
+          basis: string
+          category: string | null
+          created_at: string
+          created_by: string
+          factor: number | null
+          id: string
+          manual_quantity: number | null
+          method: string | null
+          name: string
+          notes: string | null
+          org_id: string
+          project_id: string
+          unit: string
+        }
+        Insert: {
+          basis: string
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          factor?: number | null
+          id?: string
+          manual_quantity?: number | null
+          method?: string | null
+          name: string
+          notes?: string | null
+          org_id: string
+          project_id: string
+          unit: string
+        }
+        Update: {
+          basis?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          factor?: number | null
+          id?: string
+          manual_quantity?: number | null
+          method?: string | null
+          name?: string
+          notes?: string | null
+          org_id?: string
+          project_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "takeoff_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takeoff_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestones: {
         Row: {
           completed_at: string | null

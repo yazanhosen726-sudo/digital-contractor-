@@ -7,6 +7,7 @@ import { financialReport } from "@/lib/finance/report";
 import { AppHeader } from "@/components/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import { ProjectDrawings } from "@/components/ProjectDrawings";
+import { ProjectTakeoff } from "@/components/ProjectTakeoff";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({
@@ -100,6 +101,7 @@ function ProjectPage() {
         )}
         <p className="mt-6 text-sm text-muted-foreground">{data.expenses.length} costs · {data.purchase_orders.length} purchase orders · {data.receivables.length} client invoices recorded.</p>
         <ProjectDrawings projectId={project.id} orgId={project.org_id} canWrite={canWrite} />
+        <ProjectTakeoff projectId={project.id} orgId={project.org_id} canWrite={canWrite} />
       </main>
     </>
   );

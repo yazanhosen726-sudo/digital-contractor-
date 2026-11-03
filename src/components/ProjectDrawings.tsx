@@ -54,7 +54,7 @@ export function ProjectDrawings({ projectId, orgId, canWrite }: { projectId: str
     setMeasuring(true);
     try { await extract({ data: { documentId: id, projectId } }); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Measurement extraction failed."); }
-    finally { setMeasuring(false); await qc.invalidateQueries({ queryKey: key }); }
+    finally { setMeasuring(false); await qc.invalidateQueries({ queryKey: key }); await qc.invalidateQueries({ queryKey: ["takeoff", orgId, projectId] }); }
   }
   async function selectFile(file: File | undefined) {
     if (!file) return;
@@ -96,7 +96,7 @@ export function ProjectDrawings({ projectId, orgId, canWrite }: { projectId: str
               <div className="flex flex-wrap items-center gap-2"><Badge variant={drawing.status === "failed" ? "destructive" : "secondary"}>{status}</Badge><Button variant="ghost" size="icon" title="Download original PDF" aria-label={`Download ${drawing.file_name}`} onClick={() => void download(drawing.storage_path, drawing.file_name)}><Download className="size-4" /></Button>{canWrite && !inspection && <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => void runInspection(drawing.id)}><RefreshCw className="mr-2 size-4" />{drawing.status === "uploaded" ? "Inspect" : "Retry inspection"}</Button>}</div>
             </div>
             {issues.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
-            <DrawingMeasurements extraction={measurements} events={reviewEvents.filter((event: ReviewEvent) => event.document_id === drawing.id)} canExtract={canWrite && inspection !== undefined} canWrite={canWrite} busy={busy !== null || measuring} projectId={projectId} documentId={drawing.id} fileName={drawing.file_name} currentUserId={currentUserId} onExtract={() => void runMeasurements(drawing.id)} onChanged={() => void qc.invalidateQueries({ queryKey: eventsKey })} />
+            <DrawingMeasurements extraction={measurements} events={reviewEvents.filter((event: ReviewEvent) => event.document_id === drawing.id)} canExtract={canWrite && inspection !== undefined} canWrite={canWrite} busy={busy !== null || measuring} projectId={projectId} documentId={drawing.id} fileName={drawing.file_name} currentUserId={currentUserId} onExtract={() => void runMeasurements(drawing.id)} onChanged={() => { void qc.invalidateQueries({ queryKey: eventsKey }); void qc.invalidateQueries({ queryKey: ["takeoff", orgId, projectId] }); }} />
             {inspection && <details className="mt-3 text-sm"><summary className="cursor-pointer font-medium">PDF evidence · {inspection.pageCount} pages</summary><div className="mt-3 space-y-4">{inspection.pages.map(page => <div key={page.page}><h3 className="font-medium">Page {page.page}</h3><p className="text-muted-foreground">Text: {page.textItems.some(t => t.text.trim()) ? "extractable" : "none found"} · Vector operators: {page.vectorOperators} · Image operators: {page.imageOperators}</p>{page.annotationCandidates.length > 0 && <p className="mt-1">Unverified annotation candidates: {page.annotationCandidates.join(" · ")}</p>}<pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded border bg-muted/30 p-3 font-mono text-xs">{page.textItems.map(i => i.text).join(" ") || "No extractable text."}</pre></div>)}<p className="break-all text-xs text-muted-foreground">SHA-256: {String(metadata["checksum"] ?? "Unavailable")}</p></div></details>}
           </li>;
         })}
