@@ -50,7 +50,7 @@ export type ItemQuantity = { ok: true; value: number; basis: TakeoffBasis } | { 
 
 export type SummaryRow = { category: string; unit: TakeoffUnit; calculated: number; manual: number; total: number; itemCount: number };
 
-const round = (value: number) => Math.round(value * 1e6) / 1e6;
+export const round = (value: number) => Math.round(value * 1e6) / 1e6;
 const sourceKey = (ref: { documentId: string; candidateId: string }) => `${ref.documentId}:${ref.candidateId}`;
 
 export function resolveSources(sources: SourceRef[], catalog: CatalogMeasurement[]): CatalogMeasurement[] {
@@ -139,6 +139,13 @@ export function itemQuantity(item: TakeoffItem, catalog: CatalogMeasurement[]): 
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "This quantity could not be calculated." };
   }
+}
+
+export function describeSource(source: SourceRef, catalog: CatalogMeasurement[]): string {
+  const match = catalog.find(item => item.documentId === source.documentId && item.candidateId === source.candidateId);
+  if (!match) return "No longer approved";
+  const repeat = source.occurrence > 1 ? ` (copy ${source.occurrence})` : "";
+  return `${match.fileName} · page ${match.page} · ${match.text}${repeat}`;
 }
 
 export function summarizeTakeoff(items: TakeoffItem[], catalog: CatalogMeasurement[]) {

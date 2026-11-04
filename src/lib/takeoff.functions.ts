@@ -64,34 +64,35 @@ async function loadApprovedCatalog(supabase: SupabaseClient<Database>, projectId
   return { catalog, checksums };
 }
 
+export async function loadTakeoffSnapshot(supabase: SupabaseClient<Database>, projectId: string): Promise<{ items: TakeoffItem[]; catalog: CatalogMeasurement[] }> {
+  const { catalog } = await loadApprovedCatalog(supabase, projectId);
+  const { data: rows, error: itemError } = await supabase.from("takeoff_items").select("id, name, category, unit, basis, method, factor, manual_quantity, notes").eq("project_id", projectId).order("created_at", { ascending: true });
+  if (itemError) throw new Error("Could not load the takeoff items. Try again.");
+  const parsedItems = z.array(itemRow).parse(rows ?? []);
+  const { data: sources, error: sourceError } = parsedItems.length === 0 ? { data: [], error: null } : await supabase.from("takeoff_item_sources").select("item_id, document_id, candidate_id, occurrence").in("item_id", parsedItems.map(row => row.id)).order("occurrence", { ascending: true });
+  if (sourceError) throw new Error("Could not load the measurement links. Try again.");
+  const parsedSources = z.array(sourceRow).parse(sources ?? []);
+  const items: TakeoffItem[] = parsedItems.map(row => ({
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    unit: row.unit,
+    basis: row.basis,
+    method: row.method,
+    factor: row.factor,
+    manualQuantity: row.manual_quantity,
+    notes: row.notes,
+    sources: parsedSources
+      .filter(source => source.item_id === row.id)
+      .map(source => ({ documentId: source.document_id, candidateId: source.candidate_id, occurrence: source.occurrence })),
+  }));
+  return { items, catalog };
+}
+
 export const loadTakeoff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ projectId: z.string().uuid() }))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { catalog } = await loadApprovedCatalog(supabase, data.projectId);
-    const { data: rows, error: itemError } = await supabase.from("takeoff_items").select("id, name, category, unit, basis, method, factor, manual_quantity, notes").eq("project_id", data.projectId).order("created_at", { ascending: true });
-    if (itemError) throw new Error("Could not load the takeoff items. Try again.");
-    const parsedItems = z.array(itemRow).parse(rows ?? []);
-    const { data: sources, error: sourceError } = parsedItems.length === 0 ? { data: [], error: null } : await supabase.from("takeoff_item_sources").select("item_id, document_id, candidate_id, occurrence").in("item_id", parsedItems.map(row => row.id)).order("occurrence", { ascending: true });
-    if (sourceError) throw new Error("Could not load the measurement links. Try again.");
-    const parsedSources = z.array(sourceRow).parse(sources ?? []);
-    const items: TakeoffItem[] = parsedItems.map(row => ({
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      unit: row.unit,
-      basis: row.basis,
-      method: row.method,
-      factor: row.factor,
-      manualQuantity: row.manual_quantity,
-      notes: row.notes,
-      sources: parsedSources
-        .filter(source => source.item_id === row.id)
-        .map(source => ({ documentId: source.document_id, candidateId: source.candidate_id, occurrence: source.occurrence })),
-    }));
-    return { items, catalog };
-  });
+  .handler(async ({ data, context }) => loadTakeoffSnapshot(context.supabase, data.projectId));
 
 const sourceInput = z.object({
   documentId: z.string().uuid(),

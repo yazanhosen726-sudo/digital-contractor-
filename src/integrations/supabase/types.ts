@@ -974,6 +974,142 @@ export type Database = {
           },
         ]
       }
+      boq_items: {
+        Row: {
+          basis: string
+          calculated_quantity: number | null
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          item_number: string
+          notes: string | null
+          org_id: string
+          boq_id: string
+          quantity: number | null
+          section: string
+          sort_order: number
+          takeoff_item_id: string | null
+          unit: string | null
+        }
+        Insert: {
+          basis: string
+          calculated_quantity?: number | null
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          item_number?: string
+          notes?: string | null
+          org_id: string
+          boq_id: string
+          quantity?: number | null
+          section: string
+          sort_order?: number
+          takeoff_item_id?: string | null
+          unit?: string | null
+        }
+        Update: {
+          basis?: string
+          calculated_quantity?: number | null
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          item_number?: string
+          notes?: string | null
+          org_id?: string
+          boq_id?: string
+          quantity?: number | null
+          section?: string
+          sort_order?: number
+          takeoff_item_id?: string | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boq_items_boq_id_fkey"
+            columns: ["boq_id"]
+            isOneToOne: false
+            referencedRelation: "boqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boq_items_takeoff_item_id_fkey"
+            columns: ["takeoff_item_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boq_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boqs: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          issued_at: string | null
+          org_id: string
+          project_id: string
+          reference: string | null
+          revision: number
+          series_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          issued_at?: string | null
+          org_id: string
+          project_id: string
+          reference?: string | null
+          revision?: number
+          series_id?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          issued_at?: string | null
+          org_id?: string
+          project_id?: string
+          reference?: string | null
+          revision?: number
+          series_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boqs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boqs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestones: {
         Row: {
           completed_at: string | null

@@ -7,9 +7,9 @@ import { deleteTakeoffItem, loadTakeoff } from "@/lib/takeoff.functions";
 import {
   TAKEOFF_METHOD_LABELS,
   TAKEOFF_UNIT_LABELS,
+  describeSource,
   itemQuantity,
   summarizeTakeoff,
-  type CatalogMeasurement,
   type TakeoffItem,
 } from "@/lib/takeoff";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,6 @@ import { TakeoffItemDialog } from "@/components/TakeoffItemDialog";
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(value);
-}
-
-function sourceLabel(source: { documentId: string; candidateId: string; occurrence: number }, catalog: CatalogMeasurement[]) {
-  const match = catalog.find(item => item.documentId === source.documentId && item.candidateId === source.candidateId);
-  if (!match) return "No longer approved";
-  const repeat = source.occurrence > 1 ? ` (copy ${source.occurrence})` : "";
-  return `${match.fileName} · page ${match.page} · ${match.text}${repeat}`;
 }
 
 export function ProjectTakeoff({ projectId, orgId, canWrite }: { projectId: string; orgId: string; canWrite: boolean }) {
@@ -139,7 +132,7 @@ export function ProjectTakeoff({ projectId, orgId, canWrite }: { projectId: stri
                   </div>
                   {item.basis === "calculated" && item.sources.length > 0 && (
                     <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-                      {item.sources.map(source => <li key={`${source.documentId}-${source.candidateId}-${source.occurrence}`} className="break-words">{sourceLabel(source, catalog)}</li>)}
+                      {item.sources.map(source => <li key={`${source.documentId}-${source.candidateId}-${source.occurrence}`} className="break-words">{describeSource(source, catalog)}</li>)}
                     </ul>
                   )}
                   {item.notes && <p className="mt-3 text-sm text-muted-foreground">{item.notes}</p>}
