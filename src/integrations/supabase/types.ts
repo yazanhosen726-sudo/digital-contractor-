@@ -1110,6 +1110,364 @@ export type Database = {
           },
         ]
       }
+      procurement_items: {
+        Row: {
+          id: string
+          org_id: string
+          project_id: string
+          boq_item_id: string | null
+          material_name: string
+          description: string | null
+          required_quantity: number
+          unit: string
+          boq_reference: string | null
+          phase: string | null
+          required_date: string | null
+          priority: string
+          status: string
+          notes: string | null
+          sort_order: number
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          project_id: string
+          boq_item_id?: string | null
+          material_name: string
+          description?: string | null
+          required_quantity: number
+          unit: string
+          boq_reference?: string | null
+          phase?: string | null
+          required_date?: string | null
+          priority?: string
+          status?: string
+          notes?: string | null
+          sort_order?: number
+          created_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          project_id?: string
+          boq_item_id?: string | null
+          material_name?: string
+          description?: string | null
+          required_quantity?: number
+          unit?: string
+          boq_reference?: string | null
+          phase?: string | null
+          required_date?: string | null
+          priority?: string
+          status?: string
+          notes?: string | null
+          sort_order?: number
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_items_boq_item_id_fkey"
+            columns: ["boq_item_id"]
+            isOneToOne: false
+            referencedRelation: "boq_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procurement_deliveries: {
+        Row: {
+          id: string
+          org_id: string
+          procurement_item_id: string
+          planned_date: string | null
+          delivery_quantity: number
+          status: string
+          notes: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          procurement_item_id: string
+          planned_date?: string | null
+          delivery_quantity: number
+          status?: string
+          notes?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          procurement_item_id?: string
+          planned_date?: string | null
+          delivery_quantity?: number
+          status?: string
+          notes?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_deliveries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_deliveries_procurement_item_id_fkey"
+            columns: ["procurement_item_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procurement_price_catalog: {
+        Row: {
+          id: string
+          org_id: string
+          material: string
+          unit: string
+          estimated_price: number
+          currency: string
+          price_date: string
+          source_ref: string | null
+          notes: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          material: string
+          unit: string
+          estimated_price: number
+          currency?: string
+          price_date?: string
+          source_ref?: string | null
+          notes?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          material?: string
+          unit?: string
+          estimated_price?: number
+          currency?: string
+          price_date?: string
+          source_ref?: string | null
+          notes?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_price_catalog_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_estimates: {
+        Row: {
+          id: string
+          org_id: string
+          project_id: string
+          series_id: string
+          revision: number
+          document_number: string
+          document_date: string
+          planned_delivery_date: string | null
+          company_name: string | null
+          company_address: string | null
+          company_contact: string | null
+          project_name: string | null
+          supplier_name: string | null
+          supplier_contact: string | null
+          currency: string
+          subtotal: number
+          transport_cost: number
+          tax_amount: number
+          discount_amount: number
+          grand_total: number
+          notes_terms: string | null
+          status: string
+          issued_at: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          project_id: string
+          series_id?: string
+          revision?: number
+          document_number: string
+          document_date?: string
+          planned_delivery_date?: string | null
+          company_name?: string | null
+          company_address?: string | null
+          company_contact?: string | null
+          project_name?: string | null
+          supplier_name?: string | null
+          supplier_contact?: string | null
+          currency?: string
+          subtotal?: number
+          transport_cost?: number
+          tax_amount?: number
+          discount_amount?: number
+          grand_total?: number
+          notes_terms?: string | null
+          status?: string
+          issued_at?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          project_id?: string
+          series_id?: string
+          revision?: number
+          document_number?: string
+          document_date?: string
+          planned_delivery_date?: string | null
+          company_name?: string | null
+          company_address?: string | null
+          company_contact?: string | null
+          project_name?: string | null
+          supplier_name?: string | null
+          supplier_contact?: string | null
+          currency?: string
+          subtotal?: number
+          transport_cost?: number
+          tax_amount?: number
+          discount_amount?: number
+          grand_total?: number
+          notes_terms?: string | null
+          status?: string
+          issued_at?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_estimates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_estimates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_estimate_lines: {
+        Row: {
+          id: string
+          org_id: string
+          estimate_id: string
+          procurement_item_id: string | null
+          sort_order: number
+          line_number: string
+          material_name: string
+          description: string | null
+          specifications: string | null
+          quantity: number
+          unit: string
+          estimated_unit_price: number
+          line_total: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          estimate_id: string
+          procurement_item_id?: string | null
+          sort_order?: number
+          line_number?: string
+          material_name: string
+          description?: string | null
+          specifications?: string | null
+          quantity?: number
+          unit: string
+          estimated_unit_price?: number
+          line_total?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          estimate_id?: string
+          procurement_item_id?: string | null
+          sort_order?: number
+          line_number?: string
+          material_name?: string
+          description?: string | null
+          specifications?: string | null
+          quantity?: number
+          unit?: string
+          estimated_unit_price?: number
+          line_total?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_estimate_lines_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_estimate_lines_procurement_item_id_fkey"
+            columns: ["procurement_item_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_estimate_lines_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestones: {
         Row: {
           completed_at: string | null
