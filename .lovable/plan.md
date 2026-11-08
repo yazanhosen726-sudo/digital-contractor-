@@ -1,29 +1,37 @@
-# First-stage PDF measurement candidates
+# Stitch UI integration into DC
 
-## Verified foundation
-Existing organization membership, project records, private document storage, audit triggers and decimal-safe financial services will be reused. AI packages and a gateway key are present; the default model is available, but no working AI drawing integration exists in application code.
+## Scope and safeguards
+Integrate the eight supplied Stitch designs into the current application, not a new app. Preserve the database, migrations, organization access rules, authentication, server functions and existing drawing, measurement, takeoff, BOQ and financial operations. No schema changes, new integrations or invented business data.
 
-## Execution plan
-1. Parse explicit written metric/imperial measurements and labeled unitless dimensions from existing PDF text evidence. Retain the exact text, value, unit, page, contributing text elements and page-space bounds. Join only nearby same-line text fragments; never infer lengths from geometry or scale.
-2. Record possible scale/unit annotations and image/vector indicators per page. All scale evidence remains unverified; scanned/image-based pages need manual review because OCR is not included.
-3. Save versioned candidate results in the existing document JSON, separate from verified records, with checksum, extraction method, confidence and completed/partial/verification/failed outcomes. Reuse successful results and upgrade previously inspected files through an explicit extraction button.
-4. Show candidate results in the existing drawing list without redesign. Test concrete parsing and safety rules, then exercise stored-file extraction, persistence and failure in the signed-in project.
+## Screen mapping
+| Stitch screen | Integration |
+| --- | --- |
+| Welcome / sign-in | Restyle the existing sign-in and account-creation experience; retain its authentication operations. The exported screenshot is blank, so use its HTML as the reference. Unconfigured social sign-in and other unsupported actions remain clearly unavailable. |
+| Main dashboard | Restyle the existing dashboard with real project counts, statuses and recent projects. Remove fabricated names, dates, progress and procurement data currently displayed. |
+| Projects list | Add a dedicated authenticated project-list page using the existing project query, search, status filtering and project-creation operation. Keep existing detail URLs. |
+| Project details | Apply the supplied layout around real project information and financial values; retain access to drawing inspection, measurement verification, takeoff and BOQ tools. Do not invent site progress, personnel or milestone data. |
+| Expenses | Display existing organization-scoped expense records, real amounts, dates and statuses. Actions without an existing supported workflow are visibly unavailable. |
+| Invoices | Display existing receivable records and payment-backed collected/outstanding values. Invoice generation remains unavailable unless an existing applicable operation supports it. |
+| Financial analytics | Present the existing deterministic financial report in the supplied visual style; keep currencies separate and use actual payment dates for any period filtering. No fabricated trends or margins. |
+| Procurement | Display existing purchase-order/planning records and applicable existing estimates. Preserve current procurement logic; do not invent shipment tracking, bids or approval operations. |
 
-## Scope
-PDF only, existing private storage and document records, existing interface. Deterministic text parsing only; no new tables, integrations, AI calls, OCR, geometric measurement, BOQ, costs or commercial documents. Confidence describes annotation parsing, not engineering accuracy. A completed parse is not verified measurement. Representative contractor drawings with independently checked dimensions are required for real-world accuracy claims.
+## Implementation sequence
+1. Establish Stitch's supplied typography, bronze/charcoal/ivory tokens, spacing and mobile controls in the existing styling system. Convert the shared header, desktop navigation and mobile bottom navigation into reusable React UI with real destinations.
+2. Add persistent English/Arabic preference, translated integrated-screen labels, document language/direction and direction-aware layouts. Preserve user-entered names and use isolated mixed-language values. Existing engineering tools remain fully accessible; translate their interface labels without altering calculations or stored evidence.
+3. Integrate sign-in, dashboard, projects list and project details first, retaining working forms, authorization checks and tools.
+4. Integrate expenses, invoices, analytics and procurement as actual authenticated application pages reading existing organization-scoped records. Show honest loading, empty, error and unavailable states. Reuse existing operations rather than adding backend behavior just to match the designs.
+5. Validate navigation, project creation and saved records with the signed-in application; check phone, tablet and desktop layouts in English and Arabic, language persistence and absence of overlapping or clipped controls.
 
-## Subsequent milestones
-- Drawing extraction and human measurement verification; maintain separate revisions and affected-output revalidation.
-- Deterministic reviewed quantities and traceable partial BOQs, with duplicate prevention.
-- Price references and separate-currency deterministic estimates; missing prices remain unresolved.
-- Reviewed procurement requirements, equivalent-product quotation comparisons and draft RFQs.
-- Distinct estimate, quotation and invoice-related documents; explicit authorization before distribution or commitments.
-- Full design-to-procurement end-to-end and security testing.
+## Visual adaptations required by real data
+- Use supplied construction imagery only as illustrative imagery, never as a claimed photograph of an actual project. Do not copy demo people, projects, suppliers, receipts or certification claims.
+- Missing project photos, progress, team, timeline or shipment information is explicitly unavailable; retain the layout where possible without presenting invented values.
+- Preserve all existing financial distinctions and currencies even where the designs show a single dollar total.
 
-## Technical decisions and limits
-- Use the existing TanStack authenticated server-function boundary and membership checks. Browser reads continue through organization-isolated policies.
-- Use a serverless PDF.js bundle through unpdf, not a model, for this first milestone. No AI call or engineering calculation is required to inspect actual PDF evidence.
-- DXF strategy: a pure JavaScript ASCII DXF parser, preserving units, layers and entities, in a later milestone; do not accept DXF as successfully analyzed now.
-- DWG requires an authorized conversion service or a contractor-exported PDF/DXF. No such service is configured, so DWG is rejected with a clear explanation.
-- Twenty MiB per source and fifty PDF pages per inspection. Over-limit, encrypted, corrupt and unsupported documents fail visibly, never partially succeed.
-- Automatic BOQ, pricing, RFQs and invoices are not part of this first milestone and will not be presented as working.
+## Technical details
+- Keep TanStack Start routing, the current authenticated gate and generated backend clients unchanged.
+- Use existing UI components and dependencies. Add only focused presentation/language modules and missing screen routes; do not replace package configuration or generated route files.
+- Existing compilation failures are already present in the dashboard and procurement code. Make only the minimum repairs needed to restore compilation, keeping backend behavior and authorization intact; verify procurement repairs with its existing tests.
+- Run relevant existing tests plus small tests for persistent language selection and any changed financial display aggregation rules. Review the platform's automatic TypeScript and production-build results; do not run duplicate manual builds.
+
+## Completion report
+Report the integrated screens, preserved workflows, tests and responsive/RTL results, any failed checks, and any features that remain unavailable. No production deployment or database changes are included.

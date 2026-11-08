@@ -1,4 +1,6 @@
 # Contractor foundation
+- [ ] Current authorized task: integrate all eight supplied Stitch screens into existing React routes with real organization-scoped data, preserved operations, persistent English/Arabic direction, and responsive validation; no database changes.
+- [ ] Stitch integration validation: relevant tests and automatic TypeScript/production-build checks; address demonstrated existing compilation failures minimally.
 - [ ] Current authorized milestone: traceable written PDF measurement candidates, unit/scale evidence, page classification, separate unverified results and processing statuses; no BOQ or costs.
 - [x] Current milestone: PDF-only secure uploads, deterministic inspection, saved evidence/download, failures/retry and feasibility assessment; 25 tests passed and signed-in upload flow verified.
 - [ ] Additional validation: two independent organization accounts, representative contractor drawings, and published Worker runtime; blocked on appropriate accounts/drawings and publication authorization.
