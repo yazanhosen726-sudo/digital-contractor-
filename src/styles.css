@@ -10,6 +10,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
+  --color-overlay: var(--overlay);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -44,20 +45,21 @@
 }
 
 :root {
-  --radius: 0.85rem;
-  --background: oklch(0.965 0.008 85);
+  --overlay: #1b1c1880;
+  --radius: 0.5rem;
+  --background: #fbf9f3;
   --foreground: oklch(0.2 0.012 95);
   --card: oklch(0.995 0.002 90);
   --card-foreground: oklch(0.2 0.012 95);
   --popover: oklch(0.995 0.002 90);
   --popover-foreground: oklch(0.2 0.012 95);
-  --primary: oklch(0.27 0.012 95);
+  --primary: #7d5317;
   --primary-foreground: oklch(0.98 0.005 90);
   --secondary: oklch(0.93 0.012 85);
   --secondary-foreground: oklch(0.25 0.012 95);
   --muted: oklch(0.94 0.008 85);
   --muted-foreground: oklch(0.52 0.012 90);
-  --accent: oklch(0.68 0.14 68);
+  --accent: #b88746;
   --accent-foreground: oklch(0.18 0.02 80);
   --destructive: oklch(0.58 0.18 28);
   --destructive-foreground: oklch(0.98 0.005 90);
@@ -84,7 +86,7 @@ body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Plus Jakarta Sans", "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.5;
 }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
@@ -99,3 +101,14 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 767px) {
   .mobile-bottom-nav { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
 }
+
+.dc-sidebar { inset-inline-start: 0; }
+.dc-main { min-width: 0; padding-bottom: 6rem; }
+.dc-content { max-width: 1200px; margin-inline: auto; padding: 1.5rem 1.25rem; }
+.dc-logo { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex-shrink: 0; border-radius: .5rem; background: var(--secondary); color: var(--primary); font-weight: 800; }
+.dc-feature { background: var(--sidebar); color: var(--sidebar-foreground); }
+.dc-record { border-radius: .5rem; background: var(--card); border: 1px solid var(--border); padding: 1rem; }
+.dc-record p, .dc-record h2 { overflow-wrap: anywhere; }
+[dir="rtl"] body { font-family: "Noto Sans Arabic", "Plus Jakarta Sans", sans-serif; }
+@media(min-width:1024px) { .dc-main, .dc-header { margin-inline-start: 15rem; } .dc-content { padding: 2rem; } }
+@media(prefers-reduced-motion:reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
