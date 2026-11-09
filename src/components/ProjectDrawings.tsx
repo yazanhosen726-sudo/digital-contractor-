@@ -1,3 +1,4 @@
+import { legacyClient } from "@/lib/legacy-schema";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -35,7 +36,7 @@ export function ProjectDrawings({ projectId, orgId, canWrite }: { projectId: str
     queryKey: eventsKey,
     enabled: drawings.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").eq("org_id", orgId).in("document_id", drawings.map(drawing => drawing.id)).order("created_at", { ascending: true });
+      const { data, error } = await legacyClient(supabase).from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").eq("org_id", orgId).in("document_id", drawings.map(drawing => drawing.id)).order("created_at", { ascending: true });
       if (error) throw error;
       return data;
     },
