@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -34,23 +35,30 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProjectsProjectIdRoute =
   AuthenticatedProjectsProjectIdRouteImport.update({
-    id: '/projects/$projectId',
-    path: '/projects/$projectId',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/$projectId',
+    path: '/$projectId',
+    getParentRoute: () => AuthenticatedProjectsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
 }
 export interface FileRoutesById {
@@ -59,19 +67,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/projects/$projectId'
+  fullPaths: '/' | '/auth' | '/dashboard' | '/projects' | '/projects/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/projects/$projectId'
+  to: '/' | '/auth' | '/dashboard' | '/projects' | '/projects/$projectId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/projects'
     | '/_authenticated/projects/$projectId'
   fileRoutesById: FileRoutesById
 }
@@ -111,24 +121,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/projects': {
+      id: '/_authenticated/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AuthenticatedProjectsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects/$projectId': {
       id: '/_authenticated/projects/$projectId'
-      path: '/projects/$projectId'
+      path: '/$projectId'
       fullPath: '/projects/$projectId'
       preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProjectsRoute
     }
   }
 }
 
+interface AuthenticatedProjectsRouteChildren {
+  AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
+}
+
+const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
+  AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
+}
+
+const AuthenticatedProjectsRouteWithChildren =
+  AuthenticatedProjectsRoute._addFileChildren(
+    AuthenticatedProjectsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
+  AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
+  AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
