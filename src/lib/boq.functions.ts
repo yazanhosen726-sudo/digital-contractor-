@@ -1,3 +1,4 @@
+import { legacyClient } from "@/lib/legacy-schema";
 import { createServerFn } from "@tanstack/react-start";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -85,7 +86,7 @@ function fail(error: PostgrestError | null, message: string): never {
 }
 
 async function loadBoqRow(supabase: Supabase, boqId: string) {
-  const { data, error } = await supabase.from("boqs").select("id, project_id, org_id, series_id, revision, title, reference, status, issued_at, created_at").eq("id", boqId).maybeSingle();
+  const { data, error } = await legacyClient(supabase).from("boqs").select("id, project_id, org_id, series_id, revision, title, reference, status, issued_at, created_at").eq("id", boqId).maybeSingle();
   if (error) fail(error, "Could not load this BOQ. Try again.");
   if (!data) throw new Error("This BOQ could not be found.");
   return boqRow.parse(data);
@@ -98,19 +99,19 @@ async function requireDraft(supabase: Supabase, boqId: string) {
 }
 
 async function loadLines(supabase: Supabase, boqId: string): Promise<BoqLine[]> {
-  const { data, error } = await supabase.from("boq_items").select(LINE_COLUMNS).eq("boq_id", boqId).order("sort_order", { ascending: true });
+  const { data, error } = await legacyClient(supabase).from("boq_items").select(LINE_COLUMNS).eq("boq_id", boqId).order("sort_order", { ascending: true });
   if (error) fail(error, "Could not load the BOQ lines. Try again.");
   return z.array(lineRow).parse(data ?? []).map(toLine);
 }
 
 async function insertLines(supabase: Supabase, boqId: string, orgId: string, lines: BoqLineDraft[]) {
   if (lines.length === 0) return;
-  const { error } = await supabase.from("boq_items").insert(lines.map(line => ({ ...lineValues(line), org_id: orgId, boq_id: boqId })));
+  const { error } = await legacyClient(supabase).from("boq_items").insert(lines.map(line => ({ ...lineValues(line), org_id: orgId, boq_id: boqId })));
   if (error) fail(error, "Could not save the BOQ lines. Try again.");
 }
 
 async function discardBoq(supabase: Supabase, boqId: string) {
-  const { error } = await supabase.from("boqs").delete().eq("id", boqId);
+  const { error } = await legacyClient(supabase).from("boqs").delete().eq("id", boqId);
   if (error) console.error("BOQ cleanup failed", error.code, error.message);
 }
 
@@ -120,7 +121,7 @@ export const listBoqs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ projectId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase.from("boqs").select("id, title, reference, revision, status, series_id, created_at").eq("project_id", data.projectId).order("created_at", { ascending: false });
+    const { data: rows, error } = await legacyClient(context.supabase).from("boqs").select("id, title, reference, revision, status, series_id, created_at").eq("project_id", data.projectId).order("created_at", { ascending: false });
     if (error) fail(error, "Could not load the BOQs. Try again.");
     return z.array(z.object({
       id: z.string().uuid(),
@@ -157,7 +158,7 @@ export const createBoq = createServerFn({ method: "POST" })
     const { data: project, error: projectError } = await supabase.from("projects").select("org_id").eq("id", data.projectId).maybeSingle();
     if (projectError || !project) throw new Error("This project could not be found.");
 
-    const { data: created, error } = await supabase.from("boqs").insert({
+    const { data: created, error } = await legacyClient(supabase).from("boqs").insert({
       org_id: project.org_id,
       project_id: data.projectId,
       title: data.title,
@@ -181,9 +182,9 @@ export const createBoqRevision = createServerFn({ method: "POST" })
     const { supabase } = context;
     const source = await loadBoqRow(supabase, data.boqId);
     const lines = await loadLines(supabase, data.boqId);
-    const { data: latest, error: latestError } = await supabase.from("boqs").select("revision").eq("series_id", source.series_id).order("revision", { ascending: false }).limit(1).maybeSingle();
+    const { data: latest, error: latestError } = await legacyClient(supabase).from("boqs").select("revision").eq("series_id", source.series_id).order("revision", { ascending: false }).limit(1).maybeSingle();
     if (latestError) fail(latestError, "Could not create a new revision. Try again.");
-    const { data: created, error } = await supabase.from("boqs").insert({
+    const { data: created, error } = await legacyClient(supabase).from("boqs").insert({
       org_id: source.org_id,
       project_id: source.project_id,
       series_id: source.series_id,
@@ -212,7 +213,7 @@ export const issueBoq = createServerFn({ method: "POST" })
     const snapshot = await loadTakeoffSnapshot(supabase, boq.project_id);
     const errors = validateBoq(lines, liveQuantities(snapshot.items, snapshot.catalog)).filter(issue => issue.severity === "error");
     if (errors.length > 0) throw new Error(`Resolve the ${errors.length} ${errors.length === 1 ? "error" : "errors"} in this BOQ before issuing it.`);
-    const { data: issued, error } = await supabase.from("boqs").update({ status: "issued", issued_at: new Date().toISOString() }).eq("id", data.boqId).eq("status", "draft").select("id").maybeSingle();
+    const { data: issued, error } = await legacyClient(supabase).from("boqs").update({ status: "issued", issued_at: new Date().toISOString() }).eq("id", data.boqId).eq("status", "draft").select("id").maybeSingle();
     if (error) fail(error, "Could not issue this BOQ. Try again.");
     if (!issued) throw new Error("This BOQ has already been issued.");
     return { id: issued.id };
@@ -251,7 +252,7 @@ export const saveBoqLine = createServerFn({ method: "POST" })
 
     if (!data.lineId) {
       const lines = await loadLines(supabase, boq.id);
-      const { data: created, error } = await supabase.from("boq_items").insert({
+      const { data: created, error } = await legacyClient(supabase).from("boq_items").insert({
         ...patch,
         org_id: boq.org_id,
         boq_id: boq.id,
@@ -262,14 +263,14 @@ export const saveBoqLine = createServerFn({ method: "POST" })
       return { id: created.id };
     }
 
-    const { data: existing, error: existingError } = await supabase.from("boq_items").select("id, basis, unit, quantity").eq("id", data.lineId).eq("boq_id", boq.id).maybeSingle();
+    const { data: existing, error: existingError } = await legacyClient(supabase).from("boq_items").select("id, basis, unit, quantity").eq("id", data.lineId).eq("boq_id", boq.id).maybeSingle();
     if (existingError) fail(existingError, "Could not load the line. Try again.");
     if (!existing) throw new Error("That BOQ line no longer exists.");
     if (existing.basis === "calculated" && data.unit !== undefined && data.unit !== existing.unit) {
       throw new Error("A calculated quantity takes its unit from the takeoff. Change the takeoff item instead.");
     }
     const quantityChanged = data.quantity !== undefined && data.quantity !== existing.quantity;
-    const { data: updated, error } = await supabase.from("boq_items").update({
+    const { data: updated, error } = await legacyClient(supabase).from("boq_items").update({
       ...patch,
       ...(quantityChanged ? { basis: "manual" as const } : {}),
     }).eq("id", data.lineId).eq("boq_id", boq.id).select("id").maybeSingle();
@@ -292,7 +293,7 @@ export const refreshBoqLine = createServerFn({ method: "POST" })
     if (!item) throw new Error("The takeoff item this line came from no longer exists.");
     const quantity = itemQuantity(item, catalog);
     if (!quantity.ok) throw new Error(quantity.error);
-    const { data: updated, error } = await supabase.from("boq_items").update({
+    const { data: updated, error } = await legacyClient(supabase).from("boq_items").update({
       unit: item.unit,
       basis: item.basis,
       quantity: quantity.value,
@@ -309,7 +310,7 @@ export const deleteBoqLine = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const boq = await requireDraft(supabase, data.boqId);
-    const { data: removed, error } = await supabase.from("boq_items").delete().eq("id", data.lineId).eq("boq_id", boq.id).select("id").maybeSingle();
+    const { data: removed, error } = await legacyClient(supabase).from("boq_items").delete().eq("id", data.lineId).eq("boq_id", boq.id).select("id").maybeSingle();
     if (error) fail(error, "Could not remove the line. Try again.");
     if (!removed) throw new Error("That BOQ line no longer exists.");
     return { id: removed.id };
@@ -326,7 +327,7 @@ export const reorderBoqLines = createServerFn({ method: "POST" })
     if (existing.length !== data.orderedIds.length || new Set(data.orderedIds).size !== data.orderedIds.length || data.orderedIds.some(id => !known.has(id))) {
       throw new Error("The BOQ changed since it was loaded. Reload it and try again.");
     }
-    const results = await Promise.all(data.orderedIds.map((id, index) => supabase.from("boq_items").update({ sort_order: index }).eq("id", id).eq("boq_id", boq.id)));
+    const results = await Promise.all(data.orderedIds.map((id, index) => legacyClient(supabase).from("boq_items").update({ sort_order: index }).eq("id", id).eq("boq_id", boq.id)));
     const failed = results.find(result => result.error);
     if (failed?.error) fail(failed.error, "Could not save the new order. Try again.");
     return { count: data.orderedIds.length };

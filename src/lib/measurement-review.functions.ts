@@ -1,3 +1,4 @@
+import { legacyClient } from "@/lib/legacy-schema";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -27,13 +28,13 @@ export const reviewMeasurement = createServerFn({ method: "POST" })
     const extraction = stored as unknown as MeasurementExtraction;
     const candidate = extraction.candidates.find(item => item.id === data.candidateId);
     if (!candidate) throw new Error("That measurement is no longer in this drawing's extraction.");
-    const { data: history, error: historyError } = await supabase.from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").eq("document_id", document.id).eq("candidate_id", candidate.id).eq("source_checksum", extraction.sourceChecksum).order("created_at", { ascending: true });
+    const { data: history, error: historyError } = await legacyClient(supabase).from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").eq("document_id", document.id).eq("candidate_id", candidate.id).eq("source_checksum", extraction.sourceChecksum).order("created_at", { ascending: true });
     if (historyError) throw new Error("Could not load the review history. Try again.");
     const latest: ReviewEvent | null = history.at(-1) ?? null;
     const action = nextEventAction(stateOf(latest), data.action);
     const finalUnit = data.correctedUnit ?? candidate.unit;
     if (action === "approved" && !finalUnit) throw new Error("Choose a unit before approving this measurement.");
-    const { error: insertError } = await supabase.from("measurement_review_events").insert({
+    const { error: insertError } = await legacyClient(supabase).from("measurement_review_events").insert({
       org_id: document.org_id,
       document_id: document.id,
       candidate_id: candidate.id,

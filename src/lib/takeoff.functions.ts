@@ -1,3 +1,4 @@
+import { legacyClient } from "@/lib/legacy-schema";
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -47,7 +48,7 @@ async function loadApprovedCatalog(supabase: SupabaseClient<Database>, projectId
   const { data: documents, error: documentError } = await supabase.from("documents").select("id, file_name, extracted_data").eq("project_id", projectId).eq("kind", "drawing");
   if (documentError) throw new Error("Could not load the project drawings. Try again.");
   const drawings = z.array(documentRow).parse(documents ?? []);
-  const { data: events, error: eventError } = drawings.length === 0 ? { data: [], error: null } : await supabase.from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").in("document_id", drawings.map(drawing => drawing.id)).order("created_at", { ascending: true });
+  const { data: events, error: eventError } = drawings.length === 0 ? { data: [], error: null } : await legacyClient(supabase).from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").in("document_id", drawings.map(drawing => drawing.id)).order("created_at", { ascending: true });
   if (eventError) throw new Error("Could not load the measurement decisions. Try again.");
   const reviewEvents = (events ?? []) as ReviewEvent[];
   const catalog: CatalogMeasurement[] = [];
@@ -66,10 +67,10 @@ async function loadApprovedCatalog(supabase: SupabaseClient<Database>, projectId
 
 export async function loadTakeoffSnapshot(supabase: SupabaseClient<Database>, projectId: string): Promise<{ items: TakeoffItem[]; catalog: CatalogMeasurement[] }> {
   const { catalog } = await loadApprovedCatalog(supabase, projectId);
-  const { data: rows, error: itemError } = await supabase.from("takeoff_items").select("id, name, category, unit, basis, method, factor, manual_quantity, notes").eq("project_id", projectId).order("created_at", { ascending: true });
+  const { data: rows, error: itemError } = await legacyClient(supabase).from("takeoff_items").select("id, name, category, unit, basis, method, factor, manual_quantity, notes").eq("project_id", projectId).order("created_at", { ascending: true });
   if (itemError) throw new Error("Could not load the takeoff items. Try again.");
   const parsedItems = z.array(itemRow).parse(rows ?? []);
-  const { data: sources, error: sourceError } = parsedItems.length === 0 ? { data: [], error: null } : await supabase.from("takeoff_item_sources").select("item_id, document_id, candidate_id, occurrence").in("item_id", parsedItems.map(row => row.id)).order("occurrence", { ascending: true });
+  const { data: sources, error: sourceError } = parsedItems.length === 0 ? { data: [], error: null } : await legacyClient(supabase).from("takeoff_item_sources").select("item_id, document_id, candidate_id, occurrence").in("item_id", parsedItems.map(row => row.id)).order("occurrence", { ascending: true });
   if (sourceError) throw new Error("Could not load the measurement links. Try again.");
   const parsedSources = z.array(sourceRow).parse(sources ?? []);
   const items: TakeoffItem[] = parsedItems.map(row => ({
@@ -159,13 +160,13 @@ export const saveTakeoffItem = createServerFn({ method: "POST" })
     };
     let itemId = data.itemId;
     if (itemId) {
-      const { data: updated, error } = await supabase.from("takeoff_items").update(values).eq("id", itemId).eq("project_id", data.projectId).select("id").maybeSingle();
+      const { data: updated, error } = await legacyClient(supabase).from("takeoff_items").update(values).eq("id", itemId).eq("project_id", data.projectId).select("id").maybeSingle();
       if (error) { console.error("Takeoff item update failed", error.code, error.message); throw new Error("Could not save the takeoff item. Try again."); }
       if (!updated) throw new Error("That takeoff item no longer exists.");
-      const { error: clearError } = await supabase.from("takeoff_item_sources").delete().eq("item_id", itemId);
+      const { error: clearError } = await legacyClient(supabase).from("takeoff_item_sources").delete().eq("item_id", itemId);
       if (clearError) { console.error("Takeoff source reset failed", clearError.code, clearError.message); throw new Error("Could not save the measurement links. Try again."); }
     } else {
-      const { data: created, error } = await supabase.from("takeoff_items").insert({ ...values, org_id: project.org_id, project_id: data.projectId }).select("id").single();
+      const { data: created, error } = await legacyClient(supabase).from("takeoff_items").insert({ ...values, org_id: project.org_id, project_id: data.projectId }).select("id").single();
       if (error) { console.error("Takeoff item insert failed", error.code, error.message); throw new Error("Could not save the takeoff item. Try again."); }
       itemId = created.id;
     }
@@ -176,7 +177,7 @@ export const saveTakeoffItem = createServerFn({ method: "POST" })
         if (!checksum) throw new Error("A measurement's drawing has no extracted measurements.");
         return { org_id: project.org_id, item_id: itemId, document_id: source.documentId, candidate_id: source.candidateId, source_checksum: checksum, occurrence: source.occurrence };
       });
-      const { error } = await supabase.from("takeoff_item_sources").insert(rows);
+      const { error } = await legacyClient(supabase).from("takeoff_item_sources").insert(rows);
       if (error) { console.error("Takeoff source insert failed", error.code, error.message); throw new Error("Could not link the measurements. Try again."); }
     }
     return { id: itemId };
@@ -186,7 +187,7 @@ export const deleteTakeoffItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ projectId: z.string().uuid(), itemId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { error, data: removed } = await context.supabase.from("takeoff_items").delete().eq("id", data.itemId).eq("project_id", data.projectId).select("id").maybeSingle();
+    const { error, data: removed } = await legacyClient(context.supabase).from("takeoff_items").delete().eq("id", data.itemId).eq("project_id", data.projectId).select("id").maybeSingle();
     if (error) { console.error("Takeoff item delete failed", error.code, error.message); throw new Error("Could not delete the takeoff item. Try again."); }
     if (!removed) throw new Error("That takeoff item no longer exists.");
     return { id: removed.id };

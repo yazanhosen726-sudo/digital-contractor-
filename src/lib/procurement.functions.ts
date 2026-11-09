@@ -1,3 +1,4 @@
+import { legacyClient } from "@/lib/legacy-schema";
 import { createServerFn } from "@tanstack/react-start";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -161,10 +162,10 @@ function toEstimateLine(row: z.infer<typeof estimateLineRow>): EstimateLine {
 }
 
 async function loadBoqItems(supabase: Supabase, projectId: string) {
-  const { data: boqs, error: boqError } = await supabase.from("boqs").select("id").eq("project_id", projectId).eq("status", "issued").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: boqs, error: boqError } = await legacyClient(supabase).from("boqs").select("id").eq("project_id", projectId).eq("status", "issued").order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (boqError) fail(boqError, "Could not load the BOQ. Try again.");
   if (!boqs) return [];
-  const { data: lines, error: lineError } = await supabase.from("boq_items").select("id, takeoff_item_id, sort_order, item_number, section, category, description, unit, quantity, calculated_quantity, basis, notes").eq("boq_id", boqs.id).order("sort_order", { ascending: true });
+  const { data: lines, error: lineError } = await legacyClient(supabase).from("boq_items").select("id, takeoff_item_id, sort_order, item_number, section, category, description, unit, quantity, calculated_quantity, basis, notes").eq("boq_id", boqs.id).order("sort_order", { ascending: true });
   if (lineError) fail(lineError, "Could not load the BOQ lines. Try again.");
   return (lines ?? []).map(row => ({
     id: row.id, sortOrder: row.sort_order, takeoffItemId: row.takeoff_item_id,
@@ -179,16 +180,16 @@ export const loadProcurement = createServerFn({ method: "POST" })
   .inputValidator(z.object({ projectId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: items, error: itemError } = await supabase.from("procurement_items").select("id, boq_item_id, material_name, description, required_quantity, unit, boq_reference, phase, required_date, priority, status, notes, sort_order").eq("project_id", data.projectId).order("sort_order", { ascending: true });
+    const { data: items, error: itemError } = await legacyClient(supabase).from("procurement_items").select("id, boq_item_id, material_name, description, required_quantity, unit, boq_reference, phase, required_date, priority, status, notes, sort_order").eq("project_id", data.projectId).order("sort_order", { ascending: true });
     if (itemError) fail(itemError, "Could not load the procurement items. Try again.");
     const parsedItems = z.array(itemRow).parse(items ?? []);
 
-    const { data: deliveries, error: deliveryError } = parsedItems.length === 0 ? { data: [], error: null } : await supabase.from("procurement_deliveries").select("id, procurement_item_id, planned_date, delivery_quantity, status, notes, sort_order").in("procurement_item_id", parsedItems.map(i => i.id)).order("sort_order", { ascending: true });
+    const { data: deliveries, error: deliveryError } = parsedItems.length === 0 ? { data: [], error: null } : await legacyClient(supabase).from("procurement_deliveries").select("id, procurement_item_id, planned_date, delivery_quantity, status, notes, sort_order").in("procurement_item_id", parsedItems.map(i => i.id)).order("sort_order", { ascending: true });
     if (deliveryError) fail(deliveryError, "Could not load the deliveries. Try again.");
     const parsedDeliveries = z.array(deliveryRow).parse(deliveries ?? []);
 
-    const orgId = parsedItems.length > 0 ? parsedItems[0]!.id : await getProjectOrg(supabase, data.projectId);
-    const { data: prices, error: priceError } = await supabase.from("procurement_price_catalog").select("id, material, unit, estimated_price, currency, price_date, source_ref, notes").eq("org_id", orgId).order("material", { ascending: true });
+    const orgId = await getProjectOrg(supabase, data.projectId);
+    const { data: prices, error: priceError } = await legacyClient(supabase).from("procurement_price_catalog").select("id, material, unit, estimated_price, currency, price_date, source_ref, notes").eq("org_id", orgId).order("material", { ascending: true });
     if (priceError) fail(priceError, "Could not load the price catalog. Try again.");
     const parsedPrices = z.array(priceRow).parse(prices ?? []);
 
@@ -209,7 +210,7 @@ export const generateProcurementItems = createServerFn({ method: "POST" })
     const boqItems = await loadBoqItems(supabase, data.projectId);
     if (boqItems.length === 0) throw new Error("Issue a BOQ before generating procurement items.");
 
-    const { data: existing, error: existingError } = await supabase.from("procurement_items").select("boq_item_id").eq("project_id", data.projectId).not("boq_item_id", "is", null);
+    const { data: existing, error: existingError } = await legacyClient(supabase).from("procurement_items").select("boq_item_id").eq("project_id", data.projectId).not("boq_item_id", "is", null);
     if (existingError) fail(existingError, "Could not check existing procurement items. Try again.");
     const alreadyLinked = new Set((existing ?? []).map(row => row.boq_item_id));
 
@@ -222,7 +223,7 @@ export const generateProcurementItems = createServerFn({ method: "POST" })
     });
     if (drafts.length === 0) throw new Error("All selected BOQ items are already in the procurement list.");
 
-    const { data: created, error } = await supabase.from("procurement_items").insert(drafts.map(d => ({
+    const { data: created, error } = await legacyClient(supabase).from("procurement_items").insert(drafts.map(d => ({
       org_id: orgId, project_id: data.projectId, boq_item_id: d.boqItemId,
       material_name: d.materialName, description: d.description, required_quantity: d.requiredQuantity,
       unit: d.unit, boq_reference: d.boqReference, phase: d.phase, required_date: d.requiredDate,
@@ -264,12 +265,12 @@ export const saveProcurementItem = createServerFn({ method: "POST" })
       notes: data.notes || null,
     };
     if (data.itemId) {
-      const { data: updated, error } = await supabase.from("procurement_items").update(values).eq("id", data.itemId).eq("project_id", data.projectId).select("id").maybeSingle();
+      const { data: updated, error } = await legacyClient(supabase).from("procurement_items").update(values).eq("id", data.itemId).eq("project_id", data.projectId).select("id").maybeSingle();
       if (error) fail(error, "Could not save the procurement item. Try again.");
       if (!updated) throw new Error("That procurement item no longer exists.");
       return { id: updated.id };
     }
-    const { data: created, error } = await supabase.from("procurement_items").insert({ ...values, org_id: orgId, project_id: data.projectId }).select("id").single();
+    const { data: created, error } = await legacyClient(supabase).from("procurement_items").insert({ ...values, org_id: orgId, project_id: data.projectId }).select("id").single();
     if (error) fail(error, "Could not add the procurement item. Try again.");
     return { id: created.id };
   });
@@ -278,7 +279,7 @@ export const deleteProcurementItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ projectId: z.string().uuid(), itemId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { data: removed, error } = await context.supabase.from("procurement_items").delete().eq("id", data.itemId).eq("project_id", data.projectId).select("id").maybeSingle();
+    const { data: removed, error } = await legacyClient(context.supabase).from("procurement_items").delete().eq("id", data.itemId).eq("project_id", data.projectId).select("id").maybeSingle();
     if (error) fail(error, "Could not delete the procurement item. Try again.");
     if (!removed) throw new Error("That procurement item no longer exists.");
     return { id: removed.id };
@@ -299,11 +300,11 @@ export const saveDelivery = createServerFn({ method: "POST" })
   .inputValidator(saveDeliveryInput)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: itemData, error: itemError } = await supabase.from("procurement_items").select("id, org_id, required_quantity").eq("id", data.itemId).maybeSingle();
+    const { data: itemData, error: itemError } = await legacyClient(supabase).from("procurement_items").select("id, org_id, required_quantity").eq("id", data.itemId).maybeSingle();
     if (itemError || !itemData) throw new Error("That procurement item could not be found.");
     const orgId = itemData.org_id;
 
-    const { data: existingDeliveries, error: delError } = await supabase.from("procurement_deliveries").select("id, procurement_item_id, planned_date, delivery_quantity, status, notes, sort_order").eq("procurement_item_id", data.itemId);
+    const { data: existingDeliveries, error: delError } = await legacyClient(supabase).from("procurement_deliveries").select("id, procurement_item_id, planned_date, delivery_quantity, status, notes, sort_order").eq("procurement_item_id", data.itemId);
     if (delError) fail(delError, "Could not load existing deliveries. Try again.");
     const deliveries = z.array(deliveryRow).parse(existingDeliveries ?? []).map(toDelivery);
 
@@ -325,19 +326,19 @@ export const saveDelivery = createServerFn({ method: "POST" })
       notes: data.notes || null,
     };
     if (data.deliveryId) {
-      const { data: updated, error } = await supabase.from("procurement_deliveries").update(values).eq("id", data.deliveryId).eq("procurement_item_id", data.itemId).select("id").maybeSingle();
+      const { data: updated, error } = await legacyClient(supabase).from("procurement_deliveries").update(values).eq("id", data.deliveryId).eq("procurement_item_id", data.itemId).select("id").maybeSingle();
       if (error) fail(error, "Could not save the delivery. Try again.");
       if (!updated) throw new Error("That delivery no longer exists.");
     } else {
-      const { data: created, error } = await supabase.from("procurement_deliveries").insert({ ...values, org_id: orgId, procurement_item_id: data.itemId, sort_order: deliveries.length }).select("id").single();
+      const { data: created, error } = await legacyClient(supabase).from("procurement_deliveries").insert({ ...values, org_id: orgId, procurement_item_id: data.itemId, sort_order: deliveries.length }).select("id").single();
       if (error) fail(error, "Could not add the delivery. Try again.");
     }
 
     const newStatus = deriveStatus({ requiredQuantity: Number(itemData.required_quantity) }, [
       ...deliveries.filter(d => d.id !== data.deliveryId),
-      { id: data.deliveryId ?? "new", procurementItemId: data.itemId, ...values, sortOrder: 0 } as Delivery,
+      { id: data.deliveryId ?? "new", procurementItemId: data.itemId, plannedDate: values.planned_date, deliveryQuantity: values.delivery_quantity, status: values.status, notes: values.notes, sortOrder: 0 },
     ]);
-    await supabase.from("procurement_items").update({ status: newStatus }).eq("id", data.itemId);
+    await legacyClient(supabase).from("procurement_items").update({ status: newStatus }).eq("id", data.itemId);
     return { status: newStatus };
   });
 
@@ -346,13 +347,13 @@ export const deleteDelivery = createServerFn({ method: "POST" })
   .inputValidator(z.object({ itemId: z.string().uuid(), deliveryId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: removed, error } = await supabase.from("procurement_deliveries").delete().eq("id", data.deliveryId).eq("procurement_item_id", data.itemId).select("id").maybeSingle();
+    const { data: removed, error } = await legacyClient(supabase).from("procurement_deliveries").delete().eq("id", data.deliveryId).eq("procurement_item_id", data.itemId).select("id").maybeSingle();
     if (error) fail(error, "Could not delete the delivery. Try again.");
     if (!removed) throw new Error("That delivery no longer exists.");
-    const { data: itemData } = await supabase.from("procurement_items").select("required_quantity").eq("id", data.itemId).maybeSingle();
-    const { data: remaining } = await supabase.from("procurement_deliveries").select("id, procurement_item_id, planned_date, delivery_quantity, status, notes, sort_order").eq("procurement_item_id", data.itemId);
+    const { data: itemData } = await legacyClient(supabase).from("procurement_items").select("required_quantity").eq("id", data.itemId).maybeSingle();
+    const { data: remaining } = await legacyClient(supabase).from("procurement_deliveries").select("id, procurement_item_id, planned_date, delivery_quantity, status, notes, sort_order").eq("procurement_item_id", data.itemId);
     const newStatus = deriveStatus({ requiredQuantity: Number(itemData?.required_quantity ?? 0) }, z.array(deliveryRow).parse(remaining ?? []).map(toDelivery));
-    await supabase.from("procurement_items").update({ status: newStatus }).eq("id", data.itemId);
+    await legacyClient(supabase).from("procurement_items").update({ status: newStatus }).eq("id", data.itemId);
     return { status: newStatus };
   });
 
@@ -364,7 +365,7 @@ export const listPriceCatalog = createServerFn({ method: "POST" })
     if (memberError) fail(memberError, "Could not load the price catalog. Try again.");
     const orgIds = (memberships ?? []).map(m => m.org_id);
     if (orgIds.length === 0) return { entries: [] };
-    const { data: prices, error } = await context.supabase.from("procurement_price_catalog").select("id, material, unit, estimated_price, currency, price_date, source_ref, notes").in("org_id", orgIds).order("material", { ascending: true });
+    const { data: prices, error } = await legacyClient(context.supabase).from("procurement_price_catalog").select("id, material, unit, estimated_price, currency, price_date, source_ref, notes").in("org_id", orgIds).order("material", { ascending: true });
     if (error) fail(error, "Could not load the price catalog. Try again.");
     return { entries: z.array(priceRow).parse(prices ?? []).map(toPriceEntry) };
   });
@@ -394,12 +395,12 @@ export const savePriceEntry = createServerFn({ method: "POST" })
       source_ref: data.sourceRef || null, notes: data.notes || null, updated_at: new Date().toISOString(),
     };
     if (data.entryId) {
-      const { data: updated, error } = await supabase.from("procurement_price_catalog").update(values).eq("id", data.entryId).eq("org_id", orgId).select("id").maybeSingle();
+      const { data: updated, error } = await legacyClient(supabase).from("procurement_price_catalog").update(values).eq("id", data.entryId).eq("org_id", orgId).select("id").maybeSingle();
       if (error) fail(error, "Could not save the price entry. Try again.");
       if (!updated) throw new Error("That price entry no longer exists.");
       return { id: updated.id };
     }
-    const { data: created, error } = await supabase.from("procurement_price_catalog").insert({ ...values, org_id: orgId }).select("id").single();
+    const { data: created, error } = await legacyClient(supabase).from("procurement_price_catalog").insert({ ...values, org_id: orgId }).select("id").single();
     if (error) fail(error, "Could not add the price entry. Try again.");
     return { id: created.id };
   });
@@ -408,7 +409,7 @@ export const deletePriceEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ entryId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { data: removed, error } = await context.supabase.from("procurement_price_catalog").delete().eq("id", data.entryId).select("id").maybeSingle();
+    const { data: removed, error } = await legacyClient(context.supabase).from("procurement_price_catalog").delete().eq("id", data.entryId).select("id").maybeSingle();
     if (error) fail(error, "Could not delete the price entry. Try again.");
     if (!removed) throw new Error("That price entry no longer exists.");
     return { id: removed.id };
@@ -418,7 +419,7 @@ export const listEstimates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ projectId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase.from("purchase_estimates").select("id, document_number, revision, status, currency, grand_total, created_at").eq("project_id", data.projectId).order("created_at", { ascending: false });
+    const { data: rows, error } = await legacyClient(context.supabase).from("purchase_estimates").select("id, document_number, revision, status, currency, grand_total, created_at").eq("project_id", data.projectId).order("created_at", { ascending: false });
     if (error) fail(error, "Could not load the purchase estimates. Try again.");
     return z.array(z.object({
       id: z.string().uuid(), document_number: z.string(), revision: z.number().int(),
@@ -430,12 +431,12 @@ export const loadEstimate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ estimateId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { data: est, error: estError } = await context.supabase.from("purchase_estimates").select("id, project_id, org_id, series_id, revision, document_number, document_date, planned_delivery_date, company_name, company_address, company_contact, project_name, supplier_name, supplier_contact, currency, subtotal, transport_cost, tax_amount, discount_amount, grand_total, notes_terms, status, issued_at, created_at").eq("id", data.estimateId).maybeSingle();
+    const { data: est, error: estError } = await legacyClient(context.supabase).from("purchase_estimates").select("id, project_id, org_id, series_id, revision, document_number, document_date, planned_delivery_date, company_name, company_address, company_contact, project_name, supplier_name, supplier_contact, currency, subtotal, transport_cost, tax_amount, discount_amount, grand_total, notes_terms, status, issued_at, created_at").eq("id", data.estimateId).maybeSingle();
     if (estError) fail(estError, "Could not load this estimate. Try again.");
     if (!est) throw new Error("This estimate could not be found.");
     const estimate = toEstimate(estimateRow.parse(est));
 
-    const { data: lines, error: lineError } = await context.supabase.from("purchase_estimate_lines").select("id, estimate_id, procurement_item_id, sort_order, line_number, material_name, description, specifications, quantity, unit, estimated_unit_price, line_total").eq("estimate_id", data.estimateId).order("sort_order", { ascending: true });
+    const { data: lines, error: lineError } = await legacyClient(context.supabase).from("purchase_estimate_lines").select("id, estimate_id, procurement_item_id, sort_order, line_number, material_name, description, specifications, quantity, unit, estimated_unit_price, line_total").eq("estimate_id", data.estimateId).order("sort_order", { ascending: true });
     if (lineError) fail(lineError, "Could not load the estimate lines. Try again.");
     const estimateLines = z.array(estimateLineRow).parse(lines ?? []).map(toEstimateLine);
 
@@ -454,13 +455,13 @@ export const createEstimate = createServerFn({ method: "POST" })
     const { supabase } = context;
     const orgId = await getProjectOrg(supabase, data.projectId);
 
-    const { data: items, error: itemError } = await supabase.from("procurement_items").select("id, boq_item_id, material_name, description, required_quantity, unit, boq_reference, phase, required_date, priority, status, notes, sort_order").eq("project_id", data.projectId).order("sort_order", { ascending: true });
+    const { data: items, error: itemError } = await legacyClient(supabase).from("procurement_items").select("id, boq_item_id, material_name, description, required_quantity, unit, boq_reference, phase, required_date, priority, status, notes, sort_order").eq("project_id", data.projectId).order("sort_order", { ascending: true });
     if (itemError) fail(itemError, "Could not load procurement items. Try again.");
     const parsedItems = z.array(itemRow).parse(items ?? []).map(toItem);
-    const selectedItems = data.procurementItemIds ? parsedItems.filter(i => data.procurementItemIds!.includes(i.id)) : parsedItems;
+    const selectedItems = data.procurementItemIds ? parsedItems.filter(i => data.procurementItemIds?.includes(i.id)) : parsedItems;
     if (selectedItems.length === 0) throw new Error("Add procurement items before creating a purchase estimate.");
 
-    const { data: prices, error: priceError } = await supabase.from("procurement_price_catalog").select("id, material, unit, estimated_price, currency, price_date, source_ref, notes").eq("org_id", orgId);
+    const { data: prices, error: priceError } = await legacyClient(supabase).from("procurement_price_catalog").select("id, material, unit, estimated_price, currency, price_date, source_ref, notes").eq("org_id", orgId);
     if (priceError) fail(priceError, "Could not load the price catalog. Try again.");
     const catalog = z.array(priceRow).parse(prices ?? []).map(toPriceEntry);
 
@@ -473,7 +474,7 @@ export const createEstimate = createServerFn({ method: "POST" })
     const { data: project, error: projectError } = await supabase.from("projects").select("name").eq("id", data.projectId).maybeSingle();
     if (projectError) fail(projectError, "Could not load the project. Try again.");
 
-    const { data: created, error } = await supabase.from("purchase_estimates").insert({
+    const { data: created, error } = await legacyClient(supabase).from("purchase_estimates").insert({
       org_id: orgId, project_id: data.projectId, document_number: data.documentNumber,
       project_name: project?.name ?? null, currency: data.currency,
       subtotal: totals.subtotal, grand_total: totals.grandTotal,
@@ -481,14 +482,14 @@ export const createEstimate = createServerFn({ method: "POST" })
     if (error) fail(error, "Could not create the purchase estimate. Try again.");
 
     if (drafts.length > 0) {
-      const { error: lineError } = await supabase.from("purchase_estimate_lines").insert(drafts.map((d, i) => ({
+      const { error: lineError } = await legacyClient(supabase).from("purchase_estimate_lines").insert(drafts.map((d, i) => ({
         org_id: orgId, estimate_id: created.id, procurement_item_id: d.procurementItemId,
         sort_order: d.sortOrder, line_number: String(i + 1), material_name: d.materialName,
         description: d.description, specifications: d.specifications, quantity: d.quantity,
         unit: d.unit, estimated_unit_price: d.estimatedUnitPrice, line_total: d.lineTotal,
       })));
       if (lineError) {
-        await supabase.from("purchase_estimates").delete().eq("id", created.id);
+        await legacyClient(supabase).from("purchase_estimates").delete().eq("id", created.id);
         fail(lineError, "Could not create the estimate lines. Try again.");
       }
     }
@@ -511,7 +512,7 @@ export const saveEstimateLine = createServerFn({ method: "POST" })
   .inputValidator(saveEstimateLineInput)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: est, error: estError } = await supabase.from("purchase_estimates").select("id, org_id, status").eq("id", data.estimateId).maybeSingle();
+    const { data: est, error: estError } = await legacyClient(supabase).from("purchase_estimates").select("id, org_id, status").eq("id", data.estimateId).maybeSingle();
     if (estError) fail(estError, "Could not load this estimate. Try again.");
     if (!est) throw new Error("This estimate could not be found.");
     if (est.status === "issued") throw new Error("This estimate has been issued and can no longer be changed.");
@@ -523,12 +524,12 @@ export const saveEstimateLine = createServerFn({ method: "POST" })
       unit: data.unit, estimated_unit_price: round(data.estimatedUnitPrice), line_total: lineTotal,
     };
     if (data.lineId) {
-      const { data: updated, error } = await supabase.from("purchase_estimate_lines").update(values).eq("id", data.lineId).eq("estimate_id", data.estimateId).select("id").maybeSingle();
+      const { data: updated, error } = await legacyClient(supabase).from("purchase_estimate_lines").update(values).eq("id", data.lineId).eq("estimate_id", data.estimateId).select("id").maybeSingle();
       if (error) fail(error, "Could not save the line. Try again.");
       if (!updated) throw new Error("That line no longer exists.");
     } else {
-      const { data: existing } = await supabase.from("purchase_estimate_lines").select("id").eq("estimate_id", data.estimateId);
-      const { data: created, error } = await supabase.from("purchase_estimate_lines").insert({ ...values, org_id: est.org_id, estimate_id: data.estimateId, sort_order: (existing ?? []).length }).select("id").single();
+      const { data: existing } = await legacyClient(supabase).from("purchase_estimate_lines").select("id").eq("estimate_id", data.estimateId);
+      const { data: created, error } = await legacyClient(supabase).from("purchase_estimate_lines").insert({ ...values, org_id: est.org_id, estimate_id: data.estimateId, sort_order: (existing ?? []).length }).select("id").single();
       if (error) fail(error, "Could not add the line. Try again.");
     }
     await recalcEstimateTotals(supabase, data.estimateId);
@@ -540,9 +541,9 @@ export const deleteEstimateLine = createServerFn({ method: "POST" })
   .inputValidator(z.object({ estimateId: z.string().uuid(), lineId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: est } = await supabase.from("purchase_estimates").select("status").eq("id", data.estimateId).maybeSingle();
+    const { data: est } = await legacyClient(supabase).from("purchase_estimates").select("status").eq("id", data.estimateId).maybeSingle();
     if (est?.status === "issued") throw new Error("This estimate has been issued and can no longer be changed.");
-    const { data: removed, error } = await supabase.from("purchase_estimate_lines").delete().eq("id", data.lineId).eq("estimate_id", data.estimateId).select("id").maybeSingle();
+    const { data: removed, error } = await legacyClient(supabase).from("purchase_estimate_lines").delete().eq("id", data.lineId).eq("estimate_id", data.estimateId).select("id").maybeSingle();
     if (error) fail(error, "Could not delete the line. Try again.");
     if (!removed) throw new Error("That line no longer exists.");
     await recalcEstimateTotals(supabase, data.estimateId);
@@ -554,16 +555,16 @@ export const reorderEstimateLines = createServerFn({ method: "POST" })
   .inputValidator(z.object({ estimateId: z.string().uuid(), orderedIds: z.array(z.string().uuid()).min(1).max(5000) }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: est } = await supabase.from("purchase_estimates").select("status").eq("id", data.estimateId).maybeSingle();
+    const { data: est } = await legacyClient(supabase).from("purchase_estimates").select("status").eq("id", data.estimateId).maybeSingle();
     if (est?.status === "issued") throw new Error("This estimate has been issued and can no longer be changed.");
-    const { data: lines } = await supabase.from("purchase_estimate_lines").select("id").eq("estimate_id", data.estimateId);
+    const { data: lines } = await legacyClient(supabase).from("purchase_estimate_lines").select("id").eq("estimate_id", data.estimateId);
     const known = new Set((lines ?? []).map(l => l.id));
     if (data.orderedIds.length !== known.size || data.orderedIds.some(id => !known.has(id))) {
       throw new Error("The estimate changed since it was loaded. Reload it and try again.");
     }
     const numbers = new Map<string, string>();
     data.orderedIds.forEach((id, index) => numbers.set(id, String(index + 1)));
-    await Promise.all(data.orderedIds.map((id, index) => supabase.from("purchase_estimate_lines").update({ sort_order: index, line_number: String(index + 1) }).eq("id", id).eq("estimate_id", data.estimateId)));
+    await Promise.all(data.orderedIds.map((id, index) => legacyClient(supabase).from("purchase_estimate_lines").update({ sort_order: index, line_number: String(index + 1) }).eq("id", id).eq("estimate_id", data.estimateId)));
     return { count: data.orderedIds.length };
   });
 
@@ -590,29 +591,29 @@ export const updateEstimate = createServerFn({ method: "POST" })
   .inputValidator(updateEstimateInput)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: est, error: estError } = await supabase.from("purchase_estimates").select("id, status").eq("id", data.estimateId).maybeSingle();
+    const { data: est, error: estError } = await legacyClient(supabase).from("purchase_estimates").select("id, status").eq("id", data.estimateId).maybeSingle();
     if (estError) fail(estError, "Could not load this estimate. Try again.");
     if (!est) throw new Error("This estimate could not be found.");
     if (est.status === "issued") throw new Error("This estimate has been issued and can no longer be changed.");
 
     const values: Record<string, unknown> = {};
-    if (data.documentNumber !== undefined) values.document_number = data.documentNumber;
-    if (data.documentDate !== undefined) values.document_date = data.documentDate;
-    if (data.plannedDeliveryDate !== undefined) values.planned_delivery_date = data.plannedDeliveryDate;
-    if (data.companyName !== undefined) values.company_name = data.companyName;
-    if (data.companyAddress !== undefined) values.company_address = data.companyAddress;
-    if (data.companyContact !== undefined) values.company_contact = data.companyContact;
-    if (data.projectName !== undefined) values.project_name = data.projectName;
-    if (data.supplierName !== undefined) values.supplier_name = data.supplierName;
-    if (data.supplierContact !== undefined) values.supplier_contact = data.supplierContact;
-    if (data.currency !== undefined) values.currency = data.currency;
-    if (data.transportCost !== undefined) values.transport_cost = round(data.transportCost);
-    if (data.taxAmount !== undefined) values.tax_amount = round(data.taxAmount);
-    if (data.discountAmount !== undefined) values.discount_amount = round(data.discountAmount);
-    if (data.notesTerms !== undefined) values.notes_terms = data.notesTerms;
+    if (data.documentNumber !== undefined) values["document_number"] = data.documentNumber;
+    if (data.documentDate !== undefined) values["document_date"] = data.documentDate;
+    if (data.plannedDeliveryDate !== undefined) values["planned_delivery_date"] = data.plannedDeliveryDate;
+    if (data.companyName !== undefined) values["company_name"] = data.companyName;
+    if (data.companyAddress !== undefined) values["company_address"] = data.companyAddress;
+    if (data.companyContact !== undefined) values["company_contact"] = data.companyContact;
+    if (data.projectName !== undefined) values["project_name"] = data.projectName;
+    if (data.supplierName !== undefined) values["supplier_name"] = data.supplierName;
+    if (data.supplierContact !== undefined) values["supplier_contact"] = data.supplierContact;
+    if (data.currency !== undefined) values["currency"] = data.currency;
+    if (data.transportCost !== undefined) values["transport_cost"] = round(data.transportCost);
+    if (data.taxAmount !== undefined) values["tax_amount"] = round(data.taxAmount);
+    if (data.discountAmount !== undefined) values["discount_amount"] = round(data.discountAmount);
+    if (data.notesTerms !== undefined) values["notes_terms"] = data.notesTerms;
 
     if (Object.keys(values).length > 0) {
-      const { error } = await supabase.from("purchase_estimates").update(values).eq("id", data.estimateId).eq("status", "draft");
+      const { error } = await legacyClient(supabase).from("purchase_estimates").update(values).eq("id", data.estimateId).eq("status", "draft");
       if (error) fail(error, "Could not save the estimate. Try again.");
     }
     await recalcEstimateTotals(supabase, data.estimateId);
@@ -620,12 +621,12 @@ export const updateEstimate = createServerFn({ method: "POST" })
   });
 
 async function recalcEstimateTotals(supabase: Supabase, estimateId: string) {
-  const { data: est } = await supabase.from("purchase_estimates").select("transport_cost, tax_amount, discount_amount").eq("id", estimateId).maybeSingle();
+  const { data: est } = await legacyClient(supabase).from("purchase_estimates").select("transport_cost, tax_amount, discount_amount").eq("id", estimateId).maybeSingle();
   if (!est) return;
-  const { data: lines } = await supabase.from("purchase_estimate_lines").select("line_total").eq("estimate_id", estimateId);
+  const { data: lines } = await legacyClient(supabase).from("purchase_estimate_lines").select("line_total").eq("estimate_id", estimateId);
   const subtotal = round((lines ?? []).reduce((sum, l) => sum + Number(l.line_total), 0));
   const grandTotal = round(Math.max(0, subtotal + Number(est.transport_cost) + Number(est.tax_amount) - Number(est.discount_amount)));
-  await supabase.from("purchase_estimates").update({ subtotal, grand_total: grandTotal }).eq("id", estimateId);
+  await legacyClient(supabase).from("purchase_estimates").update({ subtotal, grand_total: grandTotal }).eq("id", estimateId);
 }
 
 export const issueEstimate = createServerFn({ method: "POST" })
@@ -633,12 +634,12 @@ export const issueEstimate = createServerFn({ method: "POST" })
   .inputValidator(z.object({ estimateId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: est } = await supabase.from("purchase_estimates").select("status").eq("id", data.estimateId).maybeSingle();
+    const { data: est } = await legacyClient(supabase).from("purchase_estimates").select("status").eq("id", data.estimateId).maybeSingle();
     if (!est) throw new Error("This estimate could not be found.");
     if (est.status !== "draft") throw new Error("This estimate has already been issued.");
-    const { data: lines } = await supabase.from("purchase_estimate_lines").select("quantity, estimated_unit_price").eq("estimate_id", data.estimateId);
+    const { data: lines } = await legacyClient(supabase).from("purchase_estimate_lines").select("quantity, estimated_unit_price").eq("estimate_id", data.estimateId);
     if ((lines ?? []).length === 0) throw new Error("Add at least one line before issuing this estimate.");
-    const { data: issued, error } = await supabase.from("purchase_estimates").update({ status: "issued", issued_at: new Date().toISOString() }).eq("id", data.estimateId).eq("status", "draft").select("id").maybeSingle();
+    const { data: issued, error } = await legacyClient(supabase).from("purchase_estimates").update({ status: "issued", issued_at: new Date().toISOString() }).eq("id", data.estimateId).eq("status", "draft").select("id").maybeSingle();
     if (error) fail(error, "Could not issue this estimate. Try again.");
     if (!issued) throw new Error("This estimate has already been issued.");
     return { id: issued.id };
@@ -649,12 +650,12 @@ export const duplicateEstimate = createServerFn({ method: "POST" })
   .inputValidator(z.object({ estimateId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: est, error: estError } = await supabase.from("purchase_estimates").select("id, org_id, project_id, series_id, revision, document_number, document_date, planned_delivery_date, company_name, company_address, company_contact, project_name, supplier_name, supplier_contact, currency, transport_cost, tax_amount, discount_amount, notes_terms").eq("id", data.estimateId).maybeSingle();
+    const { data: est, error: estError } = await legacyClient(supabase).from("purchase_estimates").select("id, org_id, project_id, series_id, revision, document_number, document_date, planned_delivery_date, company_name, company_address, company_contact, project_name, supplier_name, supplier_contact, currency, transport_cost, tax_amount, discount_amount, notes_terms").eq("id", data.estimateId).maybeSingle();
     if (estError) fail(estError, "Could not load this estimate. Try again.");
     if (!est) throw new Error("This estimate could not be found.");
-    const { data: latest, error: latestError } = await supabase.from("purchase_estimates").select("revision").eq("series_id", est.series_id).order("revision", { ascending: false }).limit(1).maybeSingle();
+    const { data: latest, error: latestError } = await legacyClient(supabase).from("purchase_estimates").select("revision").eq("series_id", est.series_id).order("revision", { ascending: false }).limit(1).maybeSingle();
     if (latestError) fail(latestError, "Could not duplicate this estimate. Try again.");
-    const { data: created, error } = await supabase.from("purchase_estimates").insert({
+    const { data: created, error } = await legacyClient(supabase).from("purchase_estimates").insert({
       org_id: est.org_id, project_id: est.project_id, series_id: est.series_id,
       revision: (latest?.revision ?? est.revision) + 1, document_number: est.document_number,
       document_date: est.document_date, planned_delivery_date: est.planned_delivery_date,
@@ -665,16 +666,16 @@ export const duplicateEstimate = createServerFn({ method: "POST" })
       discount_amount: est.discount_amount, notes_terms: est.notes_terms,
     }).select("id").single();
     if (error) fail(error, "Could not duplicate this estimate. Try again.");
-    const { data: lines } = await supabase.from("purchase_estimate_lines").select("procurement_item_id, sort_order, line_number, material_name, description, specifications, quantity, unit, estimated_unit_price, line_total").eq("estimate_id", data.estimateId).order("sort_order", { ascending: true });
+    const { data: lines } = await legacyClient(supabase).from("purchase_estimate_lines").select("procurement_item_id, sort_order, line_number, material_name, description, specifications, quantity, unit, estimated_unit_price, line_total").eq("estimate_id", data.estimateId).order("sort_order", { ascending: true });
     if (lines && lines.length > 0) {
-      const { error: lineError } = await supabase.from("purchase_estimate_lines").insert(lines.map(l => ({
+      const { error: lineError } = await legacyClient(supabase).from("purchase_estimate_lines").insert(lines.map(l => ({
         org_id: est.org_id, estimate_id: created.id, procurement_item_id: l.procurement_item_id,
         sort_order: l.sort_order, line_number: l.line_number, material_name: l.material_name,
         description: l.description, specifications: l.specifications, quantity: l.quantity,
         unit: l.unit, estimated_unit_price: l.estimated_unit_price, line_total: l.line_total,
       })));
       if (lineError) {
-        await supabase.from("purchase_estimates").delete().eq("id", created.id);
+        await legacyClient(supabase).from("purchase_estimates").delete().eq("id", created.id);
         fail(lineError, "Could not duplicate the estimate lines. Try again.");
       }
     }
