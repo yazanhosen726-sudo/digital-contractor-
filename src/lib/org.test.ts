@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest';
+import { QueryClient } from '@tanstack/react-query';
 
 const mocks = vi.hoisted(() => {
   const query = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), limit: vi.fn(), maybeSingle: vi.fn() };
@@ -13,6 +14,6 @@ it('selects the authenticated users own membership, not another visible member',
   mocks.getUser.mockResolvedValue({ data: { user: { id: userId } }, error: null });
   for (const method of ['select', 'eq', 'order', 'limit'] as const) mocks.query[method].mockReturnValue(mocks.query);
   mocks.query.maybeSingle.mockResolvedValue({ data: { role: 'member' }, error: null });
-  await membershipQuery.queryFn();
+  await new QueryClient().fetchQuery(membershipQuery);
   expect(mocks.query.eq).toHaveBeenCalledWith('user_id', userId);
 });
