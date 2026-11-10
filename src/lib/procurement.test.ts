@@ -62,7 +62,7 @@ function estimateLine(overrides: Partial<EstimateLine> & Pick<EstimateLine, "id"
 
 describe("Phase 1: procurement requirement generation from BOQ", () => {
   const lines = [
-    boqLine({ id: "bl-1", description: "Cement bags", quantity: 100, unit: "bag", itemNumber: "1.1", category: "Concrete Works", notes: "OPC 42.5" }),
+    boqLine({ id: "bl-1", description: "Cement bags", quantity: 100, unit: "ea", itemNumber: "1.1", category: "Concrete Works", notes: "OPC 42.5" }),
     boqLine({ id: "bl-2", description: "Steel bars", quantity: 250, unit: "m", itemNumber: "1.2", category: "Reinforcement" }),
     boqLine({ id: "bl-3", description: "Empty line", quantity: 0, unit: "ea", itemNumber: "2.1" }),
     boqLine({ id: "bl-4", description: "No unit line", quantity: 50, unit: null, itemNumber: "2.2" }),
@@ -77,7 +77,7 @@ describe("Phase 1: procurement requirement generation from BOQ", () => {
 
   it("transfers the quantity and unit from the BOQ line", () => {
     expect(drafts[0]!.requiredQuantity).toBe(100);
-    expect(drafts[0]!.unit).toBe("bag");
+    expect(drafts[0]?.unit).toBe("ea");
     expect(drafts[1]!.requiredQuantity).toBe(250);
     expect(drafts[1]!.unit).toBe("m");
   });
