@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectDrawings } from "@/components/ProjectDrawings";
 import { ProjectTakeoff } from "@/components/ProjectTakeoff";
 import { ProjectBoq } from "@/components/ProjectBoq";
-export const Route = createFileRoute("/_authenticated/projects/$projectId")({
+export const Route = createFileRoute("/_authenticated/projects_/$projectId")({
   head: () => ({
     meta: [
       { title: "Project — Digital Contractor" },
