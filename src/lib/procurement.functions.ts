@@ -1,4 +1,4 @@
-import { legacyClient } from "@/lib/legacy-schema";
+import { legacyClient, type LegacyDatabase } from "@/lib/legacy-schema";
 import { createServerFn } from "@tanstack/react-start";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -13,7 +13,6 @@ import {
   INDICATIVE_LABEL,
   PROCUREMENT_PRIORITIES,
   PROCUREMENT_STATUSES,
-  round,
   validateDeliveryQuantity,
   type Delivery,
   type EstimateLine,
@@ -22,6 +21,7 @@ import {
   type PurchaseEstimate,
 } from "./procurement";
 import { autoLineNumbers } from "./procurement";
+import { round } from "./takeoff";
 
 type Supabase = SupabaseClient<Database>;
 
@@ -596,7 +596,7 @@ export const updateEstimate = createServerFn({ method: "POST" })
     if (!est) throw new Error("This estimate could not be found.");
     if (est.status === "issued") throw new Error("This estimate has been issued and can no longer be changed.");
 
-    const values: Record<string, unknown> = {};
+    const values: LegacyDatabase['public']['Tables']['purchase_estimates']['Update'] = {};
     if (data.documentNumber !== undefined) values["document_number"] = data.documentNumber;
     if (data.documentDate !== undefined) values["document_date"] = data.documentDate;
     if (data.plannedDeliveryDate !== undefined) values["planned_delivery_date"] = data.plannedDeliveryDate;
