@@ -1,5 +1,5 @@
 # Contractor foundation
-- [ ] Targeted repair: route-link types, project creation payload, procurement imports/update types and test fixture; run relevant tests and inspect automatic production validation. No database changes.
+- [x] Targeted repair: route-link types, project creation payload, procurement imports/update types and test fixture; 54 relevant tests passed and automatic TypeScript/production validation reported build OK. Missing screens remain unavailable; no database changes.
 - [ ] Current authorized task: integrate all eight supplied Stitch screens into existing React routes with real organization-scoped data, preserved operations, persistent English/Arabic direction, and responsive validation; no database changes.
 - [ ] Stitch integration validation: relevant tests and automatic TypeScript/production-build checks; address demonstrated existing compilation failures minimally.
 - [ ] Current authorized milestone: traceable written PDF measurement candidates, unit/scale evidence, page classification, separate unverified results and processing statuses; no BOQ or costs.
