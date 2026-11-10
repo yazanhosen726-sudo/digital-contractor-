@@ -5,9 +5,10 @@ const currency = z.string().regex(/^[A-Z]{3}$/);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s => !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0,10) === s, 'Invalid date');
 export const amount = z.string().regex(/^\d{1,14}(\.\d{1,2})?$/, 'Enter a positive amount with at most two decimal places');
 const optionalId = z.string().uuid().nullable();
-export const projectInput = orgInput.extend({ name: text, code: text, location: z.string().max(500), currency, original_budget: amount, contract_value: amount, status: z.enum(['planning','active','on_hold','completed','cancelled']) });
+const optionalProjectAmount = z.union([z.literal('').transform(() => null), amount]);
+export const projectInput = orgInput.extend({ name: text, code: text, location: z.string().max(500), currency, original_budget: optionalProjectAmount, contract_value: optionalProjectAmount, status: z.enum(['planning','active','on_hold','completed','cancelled']) });
 export const projectInsertInput = projectInput.transform(({ orgId, original_budget, contract_value, ...project }) => ({
-  ...project, org_id: orgId, original_budget: Number(original_budget), contract_value: Number(contract_value),
+  ...project, org_id: orgId, original_budget: original_budget === null ? null : Number(original_budget), contract_value: contract_value === null ? null : Number(contract_value),
 }));
 export const supplierInput = orgInput.extend({ name: text, email: z.union([z.literal(''),z.string().email().max(255)]), phone: z.string().max(80), notes: z.string().max(2000) });
 export const expenseInput = orgInput.extend({ description: text, project_id: optionalId, category_id: optionalId, supplier_id: optionalId, purchase_order_id: optionalId, document_id: optionalId, invoice_number: z.string().max(100), transaction_date: date, due_date: date.nullable(), currency, subtotal: amount, discount_amount: amount, tax_amount: amount, is_general_overhead: z.boolean() });

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, WRITE_ROLES } from "@/lib/org";
 import { financialReport } from "@/lib/finance/report";
 import { AppHeader } from "@/components/AppHeader";
+import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/ui/badge";
 import { ProjectDrawings } from "@/components/ProjectDrawings";
 import { ProjectTakeoff } from "@/components/ProjectTakeoff";
@@ -50,7 +51,7 @@ function ProjectPage() {
 
   if (isLoading) return <p className="p-8 text-muted-foreground">Loading…</p>;
   if (error) return <p className="p-8 text-destructive">{error.message}</p>;
-  if (!data?.project) return (<><AppHeader /><p className="p-8">Project not found. <Link to="/dashboard" className="underline">Back to projects</Link></p></>);
+  if (!data?.project) return (<><AppHeader /><p className="p-8">Project not found. <Link to="/projects" className="underline">Back to projects</Link></p></>);
   const project = data.project;
   const report = financialReport({ ...data, projects: [project] }).projects[0];
   const canWrite = membership ? WRITE_ROLES.includes(membership.role) : false;
@@ -75,10 +76,8 @@ function ProjectPage() {
   ];
 
   return (
-    <>
-      <AppHeader orgName={membership?.organizations?.name} />
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <Link to="/dashboard" className="text-sm text-muted-foreground underline">← All projects</Link>
+    <Screen title="Projects" orgName={membership?.organizations?.name}>
+        <Link to="/projects" className="text-sm text-muted-foreground underline">← All projects</Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold">{project.name}</h1>
@@ -103,7 +102,6 @@ function ProjectPage() {
         <ProjectDrawings projectId={project.id} orgId={project.org_id} canWrite={canWrite} />
         <ProjectTakeoff projectId={project.id} orgId={project.org_id} canWrite={canWrite} />
         <ProjectBoq projectId={project.id} canWrite={canWrite} />
-      </main>
-    </>
+    </Screen>
   );
 }
