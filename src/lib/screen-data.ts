@@ -1,5 +1,25 @@
 import { queryOptions } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+import { centsToString, toCents } from '@/lib/finance/money';
+
+export type BusinessRecords = {
+  projects: Database['public']['Tables']['projects']['Row'][];
+  expenses: Database['public']['Tables']['expenses']['Row'][];
+  receivables: Database['public']['Tables']['receivables']['Row'][];
+  payments: Database['public']['Tables']['payments']['Row'][];
+  purchase_orders: Database['public']['Tables']['purchase_orders']['Row'][];
+  budget_revisions: Database['public']['Tables']['budget_revisions']['Row'][];
+  exchange_rates: Database['public']['Tables']['exchange_rates']['Row'][];
+  suppliers: Database['public']['Tables']['suppliers']['Row'][];
+};
+
+export function sumCurrency<T extends { currency: string }>(rows: T[], amount: (row: T) => string | number) {
+  const totals = new Map<string, bigint>();
+  for (const row of rows) totals.set(row.currency, (totals.get(row.currency) ?? 0n) + toCents(amount(row)));
+  return Object.fromEntries([...totals].map(([currency, cents]) => [currency, centsToString(cents)]));
+}
+
 export const businessRecordsQuery = (orgId: string) => queryOptions({
   queryKey: ['business-records', orgId],
   queryFn: async () => {
