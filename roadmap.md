@@ -1,5 +1,5 @@
 # Contractor foundation
-- [ ] Current task: complete the approved Expenses, Invoices, Financial analytics and Procurement pages; connect all primary navigation using real organization-scoped records, English/Arabic support and honest pending states; no schema changes.
+- [x] Current task: completed Expenses, Invoices, Financial analytics and Procurement with real organization-scoped records, working primary navigation, English/Arabic support and honest pending states; no schema changes. Signed-in desktop/mobile checks and 20 focused tests passed; automatic TypeScript/production build OK.
 - [ ] Priority repair: project form validation/persistence, current-user membership selection, and navigation among implemented pages; preserve records and schema. Missing approved screens stay deferred, not simulated.
 - [x] Targeted repair: route-link types, project creation payload, procurement imports/update types and test fixture; 54 relevant tests passed and automatic TypeScript/production validation reported build OK. Missing screens remain unavailable; no database changes.
 - [ ] Current authorized task: integrate all eight supplied Stitch screens into existing React routes with real organization-scoped data, preserved operations, persistent English/Arabic direction, and responsive validation; no database changes.
