@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, CheckCircle2, HardHat } from 'lucide-react';
+import { ChartNoAxesCombined, CheckCircle2, FileText, HardHat, Receipt } from 'lucide-react';
 import { membershipQuery, projectsQuery, WRITE_ROLES } from '@/lib/org';
 import { screenHead } from '@/lib/screen-data';
 import { Screen } from '@/components/Screen';

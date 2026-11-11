@@ -11,6 +11,10 @@ describe("App routing", () => {
     ['/dashboard', '/_authenticated/dashboard'],
     ['/projects', '/_authenticated/projects'],
     ['/projects/00000000-0000-4000-8000-000000000001', '/_authenticated/projects/$projectId'],
+    ['/expenses', '/_authenticated/expenses'],
+    ['/invoices', '/_authenticated/invoices'],
+    ['/analytics', '/_authenticated/analytics'],
+    ['/procurement', '/_authenticated/procurement'],
   ])('matches the implemented page for %s', (path, routeId) => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes(path).at(-1)?.routeId).toBe(routeId);
