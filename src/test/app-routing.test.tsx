@@ -10,7 +10,7 @@ describe("App routing", () => {
   it.each([
     ['/dashboard', '/_authenticated/dashboard'],
     ['/projects', '/_authenticated/projects'],
-    ['/projects/00000000-0000-4000-8000-000000000001', '/_authenticated/projects/$projectId'],
+    ['/projects/00000000-0000-4000-8000-000000000001', '/_authenticated/projects_/$projectId'],
     ['/expenses', '/_authenticated/expenses'],
     ['/invoices', '/_authenticated/invoices'],
     ['/analytics', '/_authenticated/analytics'],
