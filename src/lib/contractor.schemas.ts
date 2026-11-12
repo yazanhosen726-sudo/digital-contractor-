@@ -5,8 +5,12 @@ const currency = z.string().regex(/^[A-Z]{3}$/);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s => !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0,10) === s, 'Invalid date');
 export const amount = z.string().regex(/^\d{1,14}(\.\d{1,2})?$/, 'Enter a positive amount with at most two decimal places');
 const optionalId = z.string().uuid().nullable();
-const optionalProjectAmount = z.union([z.literal('').transform(() => null), amount]);
-export const projectInput = orgInput.extend({ name: text, code: text, location: z.string().max(500), currency, original_budget: optionalProjectAmount, contract_value: optionalProjectAmount, status: z.enum(['planning','active','on_hold','completed','cancelled']) });
+const optionalProjectAmount = z.preprocess(
+  value => value == null || (typeof value === 'string' && value.trim() === '') ? null : typeof value === 'string' ? value.trim() : value,
+  z.union([z.null(), z.string().regex(/^(?:\d{1,14}(?:\.\d{0,2})?|\.\d{1,2})$/, 'Enter zero or a positive amount with at most two decimal places')]),
+);
+const projectText = (label: string) => z.string().trim().min(1, `${label} is required`).max(300, `${label} must be 300 characters or fewer`);
+export const projectInput = orgInput.extend({ name: projectText('Project name'), code: projectText('Project code'), location: z.preprocess(value => value == null ? '' : value, z.string().trim().max(500, 'Location must be 500 characters or fewer')), currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, 'Enter a three-letter currency code, such as USD'), original_budget: optionalProjectAmount, contract_value: optionalProjectAmount, status: z.enum(['planning','active','on_hold','completed','cancelled']) });
 export const projectInsertInput = projectInput.transform(({ orgId, original_budget, contract_value, ...project }) => ({
   ...project, org_id: orgId, original_budget: original_budget === null ? null : Number(original_budget), contract_value: contract_value === null ? null : Number(contract_value),
 }));

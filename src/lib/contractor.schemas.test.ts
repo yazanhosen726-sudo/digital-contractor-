@@ -20,3 +20,24 @@ it('rejects malformed or negative supplied project amounts', () => {
   expect(projectInsertInput.safeParse({ ...input, original_budget: '-1' }).success).toBe(false);
   expect(projectInsertInput.safeParse({ ...input, contract_value: '12.345' }).success).toBe(false);
 });
+it('normalizes lowercase and padded currency before the existing uppercase database constraint', () => {
+  expect(projectInsertInput.parse({ ...input, currency: ' usd ' }).currency).toBe('USD');
+});
+it.each(['', ' ', null, undefined])('normalizes optional amount %s to null', value => {
+  const project = projectInsertInput.parse({ ...input, original_budget: value, contract_value: value });
+  expect(project.original_budget).toBeNull();
+  expect(project.contract_value).toBeNull();
+});
+it.each([['0', 0], ['0.00', 0], ['.50', 0.5], ['12.', 12], [' 1250.50 ', 1250.5]])('converts valid decimal %s consistently', (value, expected) => {
+  expect(projectInsertInput.parse({ ...input, original_budget: value, contract_value: value }).original_budget).toBe(expected);
+  expect(projectInsertInput.parse({ ...input, original_budget: value, contract_value: value }).contract_value).toBe(expected);
+});
+it('normalizes missing optional location and trims supplied project fields', () => {
+  const project = projectInsertInput.parse({ ...input, name: ' Project ', code: ' P-1 ', location: undefined });
+  expect(project.location).toBe(''); expect(project.name).toBe('Project'); expect(project.code).toBe('P-1');
+});
+it.each([['name', ' ', 'Project name is required'], ['code', '', 'Project code is required'], ['currency', 'US', 'Enter a three-letter currency code, such as USD']])('returns a specific error for invalid %s', (field, value, message) => {
+  const result = projectInsertInput.safeParse({ ...input, [field]: value });
+  expect(result.success).toBe(false);
+  if (!result.success) expect(result.error.issues).toContainEqual(expect.objectContaining({ path: [field], message }));
+});

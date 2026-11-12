@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Building2, ArrowUpRight, Search } from 'lucide-react';
@@ -21,7 +21,40 @@ export function ProjectList({ orgId, canWrite, compact = false }: { orgId: strin
 }
 export function NewProject({ orgId, onDone }: { orgId: string; onDone: () => void }) {
   const { t } = useLanguage(); const qc = useQueryClient(); const [busy, setBusy] = useState(false);
-  async function submit(e: FormEvent<HTMLFormElement>) { e.preventDefault(); const form = new FormData(e.currentTarget); const result = projectInsertInput.safeParse({ ...Object.fromEntries(form), orgId, status: 'planning' }); if (!result.success) { toast.error(result.error.issues[0]?.message ?? 'Invalid project'); return; } setBusy(true); try { const { error } = await supabase.from('projects').insert(result.data); if (error) throw error; await qc.invalidateQueries({ queryKey: ['projects'] }); await qc.invalidateQueries({ queryKey: ['business-records'] }); onDone(); } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not save project'); } finally { setBusy(false); } }
-  return <form onSubmit={submit} className="mb-6 border-y py-5"><div className="grid gap-4 sm:grid-cols-2">{[['name','Project name'],['code','Project code'],['location','Location'],['currency','Currency'],['original_budget','Original budget'],['contract_value','Contract value']].map(([name, label]) => name && label && <div key={name} className="space-y-1"><Label htmlFor={`new-${name}`}>{t(label)}</Label><Input id={`new-${name}`} name={name} required={name === 'name' || name === 'code' || name === 'currency'} defaultValue={name === 'currency' ? 'USD' : undefined} type={name.includes('budget') || name.includes('value') ? 'number' : 'text'} step="0.01" min="0" /></div>)}</div><div className="mt-4 flex gap-2"><Button disabled={busy}>{t(busy ? 'Please wait…' : 'Create project')}</Button><Button type="button" variant="outline" onClick={onDone}>{t('Cancel')}</Button></div></form>;
+  const inFlight = useRef(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (inFlight.current) return;
+    const form = new FormData(e.currentTarget);
+    const result = projectInsertInput.safeParse({ ...Object.fromEntries(form), orgId, status: 'planning' });
+    if (!result.success) {
+      const fields: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = String(issue.path[0] ?? 'form');
+        fields[field === 'orgId' ? 'form' : field] ??= field === 'orgId' ? 'Your business could not be identified. Refresh the page and try again.' : issue.message;
+      }
+      setErrors(fields);
+      return;
+    }
+    inFlight.current = true; setBusy(true); setErrors({});
+    try {
+      const { data, error } = await supabase.from('projects').insert(result.data).select('id, org_id, code').single();
+      if (error) {
+        setErrors(error.code === '23505' ? { code: 'This project code already exists in your business. Enter a different code.' } : { form: error.code === '42501' ? 'Your account does not have permission to create projects in this business.' : error.message || 'Could not save project. Please check your connection.' });
+        return;
+      }
+      if (!data || data.org_id !== orgId || data.code !== result.data.code) {
+        setErrors({ form: 'The saved project could not be confirmed. Refresh the Projects list before submitting again.' });
+        return;
+      }
+      await qc.invalidateQueries({ queryKey: ['projects', orgId] });
+      await qc.invalidateQueries({ queryKey: ['business-records'] });
+      onDone();
+    } catch (error) {
+      setErrors({ form: error instanceof Error ? error.message : 'Could not confirm the save. Refresh the Projects list before submitting again.' });
+    } finally { inFlight.current = false; setBusy(false); }
+  }
+  return <form onSubmit={submit} noValidate className="mb-6 border-y py-5"><div className="grid gap-4 sm:grid-cols-2">{[['name','Project name'],['code','Project code'],['location','Location'],['currency','Currency'],['original_budget','Original budget'],['contract_value','Contract value']].map(([name, label]) => name && label && <div key={name} className="space-y-1"><Label htmlFor={`new-${name}`}>{t(label)}</Label><Input id={`new-${name}`} name={name} disabled={busy} required={name === 'name' || name === 'code' || name === 'currency'} aria-invalid={Boolean(errors[name])} aria-describedby={errors[name] ? `new-${name}-error` : undefined} defaultValue={name === 'currency' ? 'USD' : undefined} type={name.includes('budget') || name.includes('value') ? 'number' : 'text'} step="0.01" min="0" />{errors[name] && <p id={`new-${name}-error`} role="alert" className="text-sm text-destructive">{t(errors[name])}</p>}</div>)}</div>{errors['form'] && <p role="alert" className="mt-3 text-sm text-destructive">{t(errors['form'])}</p>}<div className="mt-4 flex gap-2"><Button disabled={busy}>{t(busy ? 'Please wait…' : 'Create project')}</Button><Button type="button" disabled={busy} variant="outline" onClick={onDone}>{t('Cancel')}</Button></div></form>;
 }
 export function CreateOrg() { const { t } = useLanguage(); const qc = useQueryClient(); const [busy, setBusy] = useState(false); async function submit(e: FormEvent<HTMLFormElement>) { e.preventDefault(); setBusy(true); const name = String(new FormData(e.currentTarget).get('name')).trim(); const { error } = await supabase.rpc('create_organization', { _name: name, _currency: 'USD' }); setBusy(false); if (error) { toast.error(error.message); return; } await qc.invalidateQueries({ queryKey: ['membership'] }); } return <form className="mx-auto max-w-md space-y-4" onSubmit={submit}><h2 className="text-xl font-bold">{t('Set up your business')}</h2><Label htmlFor="business-name">{t('Business name')}</Label><Input id="business-name" name="name" required maxLength={200} /><Button disabled={busy}>{t('Create workspace')}</Button></form>; }
