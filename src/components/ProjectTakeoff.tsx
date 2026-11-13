@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TakeoffItemDialog } from "@/components/TakeoffItemDialog";
+import { TAKEOFF_PENDING } from "@/lib/drawing-workflow";
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(value);
@@ -54,13 +55,15 @@ export function ProjectTakeoff({ projectId, orgId, canWrite }: { projectId: stri
           <h2 className="text-xl font-semibold">Quantity takeoff</h2>
           <p className="text-sm text-muted-foreground">Built only from approved drawing measurements.</p>
         </div>
-        {canWrite && <Button disabled={isPending || !!error} onClick={() => setEditing({ item: null })}><Plus className="mr-2 size-4" />Add item</Button>}
+        {canWrite && <Button disabled={isPending || !!error || !data?.available} onClick={() => setEditing({ item: null })}><Plus className="mr-2 size-4" />Add item</Button>}
       </div>
 
       {isPending && <p className="mt-4 text-sm text-muted-foreground">Loading takeoff…</p>}
       {error && <p role="alert" className="mt-4 text-sm text-destructive">Could not load the takeoff: {error.message}</p>}
 
-      {data && (
+      {data && !data.available && <p className="mt-4 text-sm text-muted-foreground">{TAKEOFF_PENDING}</p>}
+      {data?.available && catalog.length === 0 && <p className="mt-4 text-sm text-muted-foreground">No approved measurements yet. Review drawing candidates before adding calculated quantities.</p>}
+      {data?.available && (
         <>
           <div className="mt-6">
             <h3 className="font-medium">Project summary</h3>

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BoqEditorDialog } from "@/components/BoqEditorDialog";
+import { BOQ_PENDING } from "@/lib/drawing-workflow";
 
 function GenerateBoqDialog({ projectId, open, onOpenChange, onCreated }: {
   projectId: string;
@@ -79,7 +80,7 @@ export function ProjectBoq({ projectId, canWrite }: { projectId: string; canWrit
     void qc.invalidateQueries({ queryKey: key });
   }
 
-  const boqs = data ?? [];
+  const boqs = data?.boqs ?? [];
 
   return (
     <section className="mt-8 border-t pt-6" aria-label="Bill of quantities">
@@ -88,13 +89,14 @@ export function ProjectBoq({ projectId, canWrite }: { projectId: string; canWrit
           <h2 className="text-xl font-semibold">Bill of quantities</h2>
           <p className="text-sm text-muted-foreground">Generated from the quantity takeoff. Review and issue when every line is complete.</p>
         </div>
-        {canWrite && <Button disabled={isPending || !!error} onClick={() => setGenerating(true)}><Plus className="mr-2 size-4" />Generate BOQ</Button>}
+        {canWrite && <Button disabled={isPending || !!error || !data?.available} onClick={() => setGenerating(true)}><Plus className="mr-2 size-4" />Generate BOQ</Button>}
       </div>
 
       {isPending && <p className="mt-4 text-sm text-muted-foreground">Loading BOQs…</p>}
       {error && <p role="alert" className="mt-4 text-sm text-destructive">Could not load the BOQs: {error.message}</p>}
 
-      {data && (
+      {data && !data.available && <p className="mt-4 text-sm text-muted-foreground">{BOQ_PENDING}</p>}
+      {data?.available && (
         <ul className="mt-6 space-y-3">
           {boqs.length === 0 && <li className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">No BOQ yet. Generate one once the takeoff has items.</li>}
           {boqs.map(boq => (

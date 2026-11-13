@@ -6,6 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { MEASUREMENT_VERSION, type MeasurementExtraction } from "./measurements";
 import { approvedMeasurements, type ReviewEvent } from "./measurement-review";
+import { missingWorkflowStorage } from "./drawing-workflow";
 import {
   TAKEOFF_BASES,
   TAKEOFF_METHODS,
@@ -49,6 +50,7 @@ async function loadApprovedCatalog(supabase: SupabaseClient<Database>, projectId
   if (documentError) throw new Error("Could not load the project drawings. Try again.");
   const drawings = z.array(documentRow).parse(documents ?? []);
   const { data: events, error: eventError } = drawings.length === 0 ? { data: [], error: null } : await legacyClient(supabase).from("measurement_review_events").select("document_id, candidate_id, source_checksum, action, corrected_value, corrected_unit, actor_id, created_at").in("document_id", drawings.map(drawing => drawing.id)).order("created_at", { ascending: true });
+  if (missingWorkflowStorage(eventError)) return { catalog: [] as CatalogMeasurement[], checksums: new Map<string, string>(), available: false };
   if (eventError) throw new Error("Could not load the measurement decisions. Try again.");
   const reviewEvents = (events ?? []) as ReviewEvent[];
   const catalog: CatalogMeasurement[] = [];
@@ -62,12 +64,14 @@ async function loadApprovedCatalog(supabase: SupabaseClient<Database>, projectId
       catalog.push({ ...measurement, documentId: drawing.id, fileName: drawing.file_name });
     }
   }
-  return { catalog, checksums };
+  return { catalog, checksums, available: true };
 }
 
-export async function loadTakeoffSnapshot(supabase: SupabaseClient<Database>, projectId: string): Promise<{ items: TakeoffItem[]; catalog: CatalogMeasurement[] }> {
-  const { catalog } = await loadApprovedCatalog(supabase, projectId);
+export async function loadTakeoffSnapshot(supabase: SupabaseClient<Database>, projectId: string): Promise<{ items: TakeoffItem[]; catalog: CatalogMeasurement[]; available: boolean }> {
+  const { catalog, available } = await loadApprovedCatalog(supabase, projectId);
+  if (!available) return { items: [], catalog: [], available: false };
   const { data: rows, error: itemError } = await legacyClient(supabase).from("takeoff_items").select("id, name, category, unit, basis, method, factor, manual_quantity, notes").eq("project_id", projectId).order("created_at", { ascending: true });
+  if (missingWorkflowStorage(itemError)) return { items: [], catalog, available: false };
   if (itemError) throw new Error("Could not load the takeoff items. Try again.");
   const parsedItems = z.array(itemRow).parse(rows ?? []);
   const { data: sources, error: sourceError } = parsedItems.length === 0 ? { data: [], error: null } : await legacyClient(supabase).from("takeoff_item_sources").select("item_id, document_id, candidate_id, occurrence").in("item_id", parsedItems.map(row => row.id)).order("occurrence", { ascending: true });
@@ -87,7 +91,7 @@ export async function loadTakeoffSnapshot(supabase: SupabaseClient<Database>, pr
       .filter(source => source.item_id === row.id)
       .map(source => ({ documentId: source.document_id, candidateId: source.candidate_id, occurrence: source.occurrence })),
   }));
-  return { items, catalog };
+  return { items, catalog, available: true };
 }
 
 export const loadTakeoff = createServerFn({ method: "POST" })

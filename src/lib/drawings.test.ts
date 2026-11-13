@@ -2,6 +2,9 @@
 import { describe, expect, it } from "vitest";
 import { annotationCandidates, assertDrawingAccess, MAX_PDF_BYTES, validatePdf } from "./drawings";
 import { inspectPdf } from "./pdf-inspection.server";
+import { readFile } from "node:fs/promises";
+import { extractMeasurements } from "./measurements";
+import { approvedMeasurements } from "./measurement-review";
 
 function pdfFixture(content = "BT /F1 12 Tf 50 700 Td (Scale 1:100 5000 mm) Tj ET 50 50 100 100 re S", pages = 1) {
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Kids [${Array.from({ length: pages }, (_, i) => `${5 + i} 0 R`).join(" ")}] /Count ${pages} >>`, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>", `<< /Length ${content.length} >>\nstream\n${content}\nendstream`, ...Array.from({ length: pages }, () => "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>")];
@@ -12,6 +15,16 @@ function pdfFixture(content = "BT /F1 12 Tf 50 700 Td (Scale 1:100 5000 mm) Tj E
   return new TextEncoder().encode(output);
 }
 describe("PDF drawing rules", () => {
+  it("keeps image-only printed dimensions unsupported and unapproved without OCR", async () => {
+    const bytes = new Uint8Array(await readFile(new URL("./__fixtures__/scanned-dimensions.pdf", import.meta.url)));
+    const inspected = await inspectPdf(bytes);
+    expect(inspected.pages[0]?.textItems).toEqual([]);
+    expect(inspected.pages[0]?.imageOperators).toBe(1);
+    const extraction = extractMeasurements(inspected, "image-fixture");
+    expect(extraction.candidates).toEqual([]);
+    expect(extraction.status).toBe("requires_verification");
+    expect(approvedMeasurements(extraction, [])).toEqual([]);
+  });
   it("accepts only PDF drawings", () => expect(() => validatePdf(pdfFixture(), "plan.dwg")).toThrow("Only PDF"));
   it("rejects spoofed PDFs", () => expect(() => validatePdf(new TextEncoder().encode("not pdf"), "plan.pdf")).toThrow("signature"));
   it("caps sources at 20 MiB", () => { expect(MAX_PDF_BYTES).toBe(20 * 1024 * 1024); expect(() => validatePdf(new Uint8Array(MAX_PDF_BYTES + 1), "plan.pdf")).toThrow("20 MiB"); });

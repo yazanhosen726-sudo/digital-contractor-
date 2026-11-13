@@ -13,6 +13,7 @@ import {
 } from "./boq";
 import { itemQuantity, round, TAKEOFF_BASES, TAKEOFF_UNITS } from "./takeoff";
 import { loadTakeoffSnapshot } from "./takeoff.functions";
+import { missingWorkflowStorage } from "./drawing-workflow";
 
 type Supabase = SupabaseClient<Database>;
 
@@ -122,8 +123,9 @@ export const listBoqs = createServerFn({ method: "POST" })
   .inputValidator(z.object({ projectId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await legacyClient(context.supabase).from("boqs").select("id, title, reference, revision, status, series_id, created_at").eq("project_id", data.projectId).order("created_at", { ascending: false });
+    if (missingWorkflowStorage(error)) return { available: false, boqs: [] };
     if (error) fail(error, "Could not load the BOQs. Try again.");
-    return z.array(z.object({
+    const boqs = z.array(z.object({
       id: z.string().uuid(),
       title: z.string(),
       reference: z.string().nullable(),
@@ -132,6 +134,7 @@ export const listBoqs = createServerFn({ method: "POST" })
       series_id: z.string().uuid(),
       created_at: z.string(),
     })).parse(rows ?? []);
+    return { available: true, boqs };
   });
 
 export const loadBoq = createServerFn({ method: "POST" })
